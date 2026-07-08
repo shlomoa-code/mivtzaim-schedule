@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#378ADD">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="סידור מבצעים כאן 11">
+<title>סידור עבודה — מבצעים כאן 11</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F9F9F8;--surface-0:#F2F2F0;--surface-1:#EAEAE8;--surface-2:#fff;
+  --border:#E0E0DC;--border-strong:#C8C8C4;
+  --text-primary:#1A1A18;--text-secondary:#555550;--text-muted:#8A8A84;
+  --fill-accent:#378ADD;--radius:8px;--font-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif
+}
+body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans);direction:rtl;min-height:100vh}
+.container{max-width:940px;margin:0 auto;padding:1rem}
+.tabs{display:flex;gap:2px;border-bottom:0.5px solid var(--border);margin-bottom:1.25rem;flex-wrap:wrap;background:var(--bg);position:sticky;top:0;z-index:50;padding-top:.5rem}
+.tab{padding:9px 14px;font-size:14px;color:var(--text-muted);cursor:pointer;border:none;background:transparent;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;display:flex;align-items:center;gap:5px}
+.tab.active{color:var(--text-primary);font-weight:500;border-bottom-color:#378ADD}
+.badge-count{background:#E24B4A;color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;min-width:18px;text-align:center}
+.btn{background:transparent;border:0.5px solid var(--border-strong);border-radius:var(--radius);padding:6px 13px;cursor:pointer;font-size:14px;color:var(--text-primary);transition:background .12s;display:inline-flex;align-items:center;gap:5px}
+.btn:hover{background:var(--surface-1)}
+.btn-sm{padding:4px 10px;font-size:13px}
+.btn-edit{background:#E6F1FB;color:#0C447C;border-color:#85B7EB;font-weight:500}
+.btn-view{background:#E1F5EE;color:#085041;border-color:#5DCAA5;font-weight:500}
+.btn-auto{background:#378ADD;color:#fff;border-color:#378ADD}
+.btn-auto:hover{background:#185FA5}
+.btn-approve{background:#E1F5EE;color:#085041;border-color:#5DCAA5}
+.btn-reject{background:#FCEBEB;color:#A32D2D;border-color:#F09595}
+.btn-submit{background:#378ADD;color:#fff;border-color:#378ADD;padding:9px 20px;font-size:14px;font-weight:500}
+.edit-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:500;background:#FEF4E6;color:#633806;border:0.5px solid #EF9F27}
+.view-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:500;background:#E1F5EE;color:#085041;border:0.5px solid #5DCAA5}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px}
+.page-title{font-size:16px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:6px}
+.week-nav{display:flex;align-items:center;gap:5px}
+.wlabel{font-size:14px;color:var(--text-secondary);min-width:130px;text-align:center}
+.controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:.85rem}
+.stat{background:var(--surface-2);border:0.5px solid var(--border);border-radius:var(--radius);padding:8px 11px}
+.stat-lbl{font-size:12px;color:var(--text-muted);margin-bottom:2px}
+.stat-val{font-size:18px;font-weight:500}
+.stat-val.ok{color:#0F6E56}.stat-val.warn{color:#BA7517}.stat-val.err{color:#A32D2D}
+.warn-bar{background:#FAEEDA;border:0.5px solid #EF9F27;border-radius:7px;padding:6px 10px;margin-bottom:.75rem;font-size:13px;color:#633806;display:flex;align-items:center;gap:5px}
+.grid-wrap{border:0.5px solid var(--border);border-radius:12px;overflow:hidden;overflow-x:auto;margin-bottom:.75rem;background:var(--surface-2)}
+.g-head{display:grid;grid-template-columns:90px repeat(7,1fr);min-width:560px;background:var(--surface-0);border-bottom:0.5px solid var(--border)}
+.ghc{padding:7px 3px;font-size:12px;font-weight:500;color:var(--text-muted);text-align:center;border-left:0.5px solid var(--border)}
+.ghc:first-child{border-left:none}
+.g-row{display:grid;grid-template-columns:90px repeat(7,1fr);min-width:560px;border-top:0.5px solid var(--border)}
+.rlbl{padding:0 8px;font-size:12px;font-weight:500;color:var(--text-secondary);display:flex;align-items:center;background:var(--surface-0);border-left:0.5px solid var(--border);min-height:46px;line-height:1.3}
+.cell{min-height:46px;border-left:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;padding:2px;transition:background .1s}
+.cell.clickable{cursor:pointer}.cell.clickable:hover{background:var(--surface-0)}
+.cell.na{background:var(--surface-0)}.cell.vac-day{background:#F0FAF5}
+.asgn{width:100%;border-radius:5px;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between;padding:4px 5px}
+.a-amir{background:#E6F1FB;color:#0C447C}.a-toujan{background:#FAEEDA;color:#633806}
+.a-gal{background:#E1F5EE;color:#085041}.a-sub{background:var(--surface-0);color:var(--text-secondary);border:0.5px dashed var(--border-strong)}
+.rmvbtn{background:none;border:none;cursor:pointer;color:inherit;opacity:.45;font-size:11px;padding:0 1px}.rmvbtn:hover{opacity:1}
+.plus{width:24px;height:24px;border-radius:50%;border:1.5px dashed var(--border-strong);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:16px}
+.var-row{display:grid;grid-template-columns:90px repeat(7,1fr);min-width:560px;border-top:2px solid var(--border-strong);background:var(--surface-0)}
+.var-lbl{padding:0 8px;font-size:11px;font-weight:700;color:var(--text-secondary);display:flex;align-items:center;background:var(--surface-0);border-left:0.5px solid var(--border);min-height:46px;text-transform:uppercase;letter-spacing:.04em}
+.var-cell{min-height:46px;border-left:0.5px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3px 2px;gap:2px;transition:background .1s}
+.var-cell.clickable{cursor:pointer}.var-cell.clickable:hover{background:var(--surface-1)}
+.var-tag{border-radius:9px;font-size:11px;font-weight:600;padding:2px 6px;white-space:nowrap;text-align:center;width:calc(100% - 4px)}
+.var-tag.cam{background:#E6F1FB;color:#0C447C;border:0.5px solid #85B7EB}
+.var-tag.field{background:#FAEEDA;color:#633806;border:0.5px solid #EF9F27}
+.var-tag-wrap{display:flex;align-items:center;gap:1px;width:calc(100% - 4px)}
+.var-tag-inner{flex:1;border-radius:9px 0 0 9px;font-size:11px;font-weight:600;padding:2px 5px;white-space:nowrap;text-align:center}
+.var-tag-inner.cam{background:#E6F1FB;color:#0C447C;border:0.5px solid #85B7EB;border-right:none}
+.var-tag-inner.field{background:#FAEEDA;color:#633806;border:0.5px solid #EF9F27;border-right:none}
+.var-rmv{border:none;cursor:pointer;font-size:10px;padding:0 4px;border-radius:0 9px 9px 0;display:flex;align-items:center}
+.var-rmv.cam{background:#E6F1FB;color:#0C447C;border:0.5px solid #85B7EB;border-left:none}
+.var-rmv.field{background:#FAEEDA;color:#633806;border:0.5px solid #EF9F27;border-left:none}
+.var-plus{width:22px;height:22px;border-radius:50%;border:1.5px dashed var(--border-strong);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:15px}
+.popup-box{background:var(--surface-2);border:0.5px solid var(--border-strong);border-radius:10px;padding:.75rem;margin-top:5px;box-shadow:0 4px 16px rgba(0,0,0,.1)}
+.pop-title{font-size:13px;font-weight:500;color:var(--text-secondary);margin-bottom:6px}
+.pop-opt{width:100%;text-align:right;padding:8px 10px;border:none;background:transparent;cursor:pointer;font-size:14px;color:var(--text-primary);border-radius:5px;display:flex;align-items:center;gap:7px;transition:background .1s}
+.pop-opt:hover{background:var(--surface-0)}.pop-opt.blocked{color:#A32D2D;background:#FCEBEB}
+.var-popup{background:var(--surface-2);border:0.5px solid var(--border-strong);border-radius:10px;padding:.75rem;margin-top:5px;box-shadow:0 4px 16px rgba(0,0,0,.1)}
+.vw-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid var(--border)}
+.vw-row:last-child{border-bottom:none}
+.vw-name{font-size:13px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:5px}
+.vw-btns{display:flex;gap:4px}
+.vw-btn{padding:4px 12px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:0.5px solid var(--border);background:var(--surface-1);color:var(--text-secondary);transition:all .1s}
+.vw-btn.cam.active{background:#E6F1FB;color:#0C447C;border-color:#85B7EB;outline:2px solid #378ADD;outline-offset:1px}
+.vw-btn.field.active{background:#FAEEDA;color:#633806;border-color:#EF9F27;outline:2px solid #EF9F27;outline-offset:1px}
+.vw-btn.off.active{background:var(--surface-1);color:var(--text-muted);outline:2px solid var(--border-strong);outline-offset:1px}
+.panel{background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:1rem;margin-top:1rem}
+.panel-title{font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:.75rem;display:flex;align-items:center;gap:5px}
+.crow{display:flex;align-items:flex-start;gap:8px;margin-bottom:.75rem;padding-bottom:.75rem;border-bottom:0.5px solid var(--border)}
+.crow:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+.av-amir{background:#E6F1FB;color:#0C447C}.av-toujan{background:#FAEEDA;color:#633806}.av-gal{background:#E1F5EE;color:#085041}
+.pills{display:flex;flex-wrap:wrap;gap:4px}
+.pill{padding:5px 10px;border-radius:10px;font-size:12px;cursor:pointer;border:0.5px solid var(--border);background:var(--surface-0);color:var(--text-secondary);user-select:none;transition:all .1s}
+.pill.blocked{background:#FCEBEB;color:#A32D2D;border-color:#F09595}
+.pill.ok{background:#E1F5EE;color:#085041;border-color:#5DCAA5}
+.sub-row{display:flex;gap:6px;margin-top:.75rem}
+.tinput{padding:7px 12px;border:0.5px solid var(--border-strong);border-radius:var(--radius);font-size:14px;background:var(--surface-0);color:var(--text-primary);flex:1}
+.sub-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.schip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px 4px 6px;border-radius:12px;font-size:13px;background:var(--surface-1);border:0.5px solid var(--border-strong);color:var(--text-secondary)}
+.schip button{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:12px}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--text-secondary);margin-top:.5rem}
+.li{display:flex;align-items:center;gap:4px}
+/* requests */
+.req-worker-sel{display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap}
+.wsel-btn{padding:9px 20px;border-radius:20px;font-size:14px;font-weight:500;cursor:pointer;border:0.5px solid var(--border-strong);background:var(--surface-2);color:var(--text-secondary);transition:all .1s}
+.wsel-btn.active-amir{background:#E6F1FB;color:#0C447C;border-color:#85B7EB}
+.wsel-btn.active-toujan{background:#FAEEDA;color:#633806;border-color:#EF9F27}
+.wsel-btn.active-gal{background:#E1F5EE;color:#085041;border-color:#5DCAA5}
+.req-form{background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1rem}
+.form-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:.6rem}
+.form-lbl{font-size:12px;font-weight:500;color:var(--text-secondary);min-width:60px}
+.date-inp{padding:5px 10px;border:0.5px solid var(--border-strong);border-radius:var(--radius);font-size:13px;background:var(--surface-0);color:var(--text-primary)}
+.note-inp{width:100%;padding:6px 10px;border:0.5px solid var(--border-strong);border-radius:var(--radius);font-size:13px;background:var(--surface-0);color:var(--text-primary);resize:none;font-family:var(--font-sans)}
+.req-card{border:0.5px solid var(--border);border-radius:10px;padding:.75rem;margin-bottom:.6rem;background:var(--surface-2);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.req-dates{font-size:13px;font-weight:500;color:var(--text-primary)}
+.req-note{font-size:11px;color:var(--text-muted);margin-top:2px}
+.status-pill{padding:4px 12px;border-radius:10px;font-size:12px;font-weight:600}
+.status-pending{background:#FEF4E6;color:#633806;border:0.5px solid #EF9F27}
+.status-approved{background:#E1F5EE;color:#085041;border:0.5px solid #5DCAA5}
+.status-rejected{background:#FCEBEB;color:#A32D2D;border:0.5px solid #F09595}
+.mgr-req-card{border:0.5px solid var(--border);border-radius:10px;padding:.75rem;margin-bottom:.6rem;background:var(--surface-2)}
+.mgr-req-top{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.mgr-req-name{font-size:13px;font-weight:600;color:var(--text-primary)}
+.mgr-req-actions{display:flex;gap:6px;margin-top:6px}
+.empty-state{text-align:center;padding:2rem;color:var(--text-muted);font-size:13px}
+/* calendar */
+.cal-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.cal-month-lbl{font-size:15px;font-weight:500;min-width:130px;text-align:center}
+.cal{border:0.5px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface-2)}
+.cal-head{display:grid;grid-template-columns:repeat(7,1fr);background:var(--surface-0);border-bottom:0.5px solid var(--border)}
+.cal-dh{padding:8px 4px;font-size:13px;font-weight:500;color:var(--text-muted);text-align:center}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.cal-cell{min-height:60px;border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);padding:4px}
+.cal-cell:nth-child(7n){border-right:none}
+.day-num{font-size:13px;font-weight:500;color:var(--text-secondary);width:24px;height:24px;display:flex;align-items:center;justify-content:center;margin-bottom:2px}
+.today .day-num{background:#378ADD;color:#fff;border-radius:50%}
+.cal-cell.empty-cal{background:var(--surface-0)}
+.vac-tag-cal{border-radius:4px;font-size:11px;font-weight:700;padding:2px 5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.vt-amir{background:#1A6FBF;color:#fff}.vt-toujan{background:#C47A00;color:#fff}.vt-gal{background:#0A7A55;color:#fff}
+/* sync indicator */
+.sync-bar{display:flex;align-items:center;gap:6px;font-size:11px;padding:5px 10px;border-radius:8px;margin-bottom:.75rem}
+.sync-bar.syncing{background:#FEF4E6;color:#633806;border:0.5px solid #EF9F27}
+.sync-bar.synced{background:#E1F5EE;color:#085041;border:0.5px solid #5DCAA5}
+.sync-bar.error{background:#FCEBEB;color:#A32D2D;border:0.5px solid #F09595}
+.sync-bar.offline{background:var(--surface-1);color:var(--text-muted);border:0.5px solid var(--border)}
+/* setup screen */
+.setup-screen{max-width:500px;margin:2rem auto;background:var(--surface-2);border:0.5px solid var(--border);border-radius:16px;padding:2rem;text-align:center}
+.setup-title{font-size:18px;font-weight:600;margin-bottom:.5rem}
+.setup-sub{font-size:13px;color:var(--text-muted);margin-bottom:1.5rem}
+.url-input{width:100%;padding:10px 12px;border:0.5px solid var(--border-strong);border-radius:var(--radius);font-size:13px;background:var(--surface-0);color:var(--text-primary);margin-bottom:.75rem;direction:ltr;text-align:left}
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN (shown before API URL is configured) -->
+<div id="setup-screen" class="setup-screen" style="display:none">
+  <div style="font-size:40px;margin-bottom:.75rem">📋</div>
+  <div class="setup-title">סידור עבודה — מבצעים כאן 11</div>
+  <div class="setup-sub">הכנס את כתובת ה-API של Google Apps Script</div>
+  <input class="url-input" id="api-url-input" placeholder="https://script.google.com/macros/s/..." />
+  <button class="btn btn-auto" style="width:100%;justify-content:center" onclick="saveApiUrl()">
+    <i class="ti ti-plug"></i> התחבר
+  </button>
+  <div style="font-size:11px;color:var(--text-muted);margin-top:1rem">הכתובת נשמרת רק במכשיר שלך</div>
+</div>
+
+<!-- MAIN APP -->
+<div id="main-app" style="display:none">
+<div class="container">
+  <div id="sync-indicator"></div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="swTab('schedule',this)"><i class="ti ti-calendar-week"></i>סידור שבועי</button>
+    <button class="tab" onclick="swTab('myconstraints',this)"><i class="ti ti-adjustments"></i>האילוצים שלי</button>
+    <button class="tab" onclick="swTab('requests',this)"><i class="ti ti-beach"></i>בקשת חופש</button>
+    <button class="tab" onclick="swTab('manager',this)" id="mgr-tab"><i class="ti ti-clipboard-check"></i>אישור מנהל <span class="badge-count" id="pending-badge" style="display:none">0</span></button>
+    <button class="tab" onclick="swTab('calendar',this)"><i class="ti ti-calendar-month"></i>לוח חופשות</button>
+  </div>
+
+  <!-- SCHEDULE -->
+  <div id="tab-schedule">
+    <div class="topbar">
+      <div class="page-title"><i class="ti ti-calendar-week"></i>סידור עבודה</div>
+      <div class="controls">
+        <span id="mode-badge"></span>
+        <button id="toggle-btn" class="btn" onclick="toggleEdit()"></button>
+        <div class="week-nav">
+          <button class="btn btn-sm" onclick="chgWk(-1)"><i class="ti ti-chevron-right"></i></button>
+          <span class="wlabel" id="wlabel"></span>
+          <button class="btn btn-sm" onclick="chgWk(1)"><i class="ti ti-chevron-left"></i></button>
+        </div>
+        <button class="btn btn-auto" id="btn-auto" onclick="autoFill()" style="display:none"><i class="ti ti-wand"></i>מלא אוטומטי</button>
+        <button class="btn btn-sm" id="btn-clear" onclick="clearAll()" style="display:none"><i class="ti ti-trash"></i></button>
+        <button class="btn btn-sm" id="btn-save" onclick="saveToServer()" style="display:none;background:#E1F5EE;color:#085041;border-color:#5DCAA5"><i class="ti ti-cloud-upload"></i>שמור</button>
+        <button class="btn btn-sm" id="btn-screenshot" onclick="takeScreenshot()" style="display:none;background:#FEF4E6;color:#633806;border-color:#EF9F27" title="צלם את הסידור לשליחה"><i class="ti ti-camera"></i>צלם</button>
+      </div>
+    </div>
+    <div class="stats-row" id="stats-row"></div>
+    <div id="warn-area"></div>
+    <div class="grid-wrap" id="main-grid"></div>
+    <div id="cell-popup"></div>
+    <div class="legend">
+      <span class="li"><span class="dot" style="background:#378ADD"></span>אמיר</span>
+      <span class="li"><span class="dot" style="background:#EF9F27"></span>תוג'אן</span>
+      <span class="li"><span class="dot" style="background:#1D9E75"></span>גל</span>
+      <span class="li"><span class="dot" style="background:#888"></span>ממלא מקום</span>
+      <span class="li"><span style="display:inline-block;width:12px;height:12px;background:#F0FAF5;border:1px solid #5DCAA5;border-radius:2px"></span>חופש מאושר</span>
+    </div>
+    <div id="edit-panels" style="display:none">
+      <div class="panel">
+        <div class="panel-title"><i class="ti ti-lock" style="color:#378ADD"></i>אילוצי עובדים</div>
+        <div id="constraint-editor"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><i class="ti ti-users" style="color:#888"></i>ממלאי מקום</div>
+        <div class="sub-row">
+          <input class="tinput" id="sub-inp" placeholder="שם ממלא מקום...">
+          <button class="btn" onclick="addSub()"><i class="ti ti-plus"></i> הוסף</button>
+        </div>
+        <div class="sub-chips" id="sub-chips"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MY CONSTRAINTS -->
+  <div id="tab-myconstraints" style="display:none">
+    <div class="page-title" style="margin-bottom:1rem"><i class="ti ti-adjustments"></i>האילוצים שלי</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:.75rem">בחר את שמך וסמן את המשמרות שאתה לא יכול השבוע:</div>
+    <div class="req-worker-sel" id="constraint-worker-sel"></div>
+    <div id="my-constraints-area" style="display:none">
+      <div style="background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1rem">
+        <div class="panel-title" style="margin-bottom:.5rem">סמן משמרות שאתה לא יכול</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:.75rem">לחץ על משמרת — אדום = לא יכול, ירוק = יכול:</div>
+        <div id="my-pills-area"></div>
+        <button class="btn btn-submit" style="margin-top:1rem;width:100%;justify-content:center" onclick="saveMyConstraints()"><i class="ti ti-send"></i>שלח למנהל</button>
+      </div>
+      <div id="my-constraints-status"></div>
+    </div>
+    <div style="background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:1rem;margin-top:1rem">
+      <div class="panel-title" style="margin-bottom:.5rem"><i class="ti ti-users"></i>האילוצים של כולם</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:.75rem">לצפייה בלבד — כל אחד יכול לראות מה כולם רשמו. אדום = לא יכול, ירוק = יכול.</div>
+      <div id="all-constraints-board"></div>
+    </div>
+  </div>
+
+  <!-- REQUESTS -->
+  <div id="tab-requests" style="display:none">
+    <div class="page-title" style="margin-bottom:1rem"><i class="ti ti-beach"></i>בקשת חופש</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:.75rem">בחר את שמך:</div>
+    <div class="req-worker-sel" id="worker-sel"></div>
+    <div id="req-form-area" style="display:none">
+      <div class="req-form">
+        <div class="panel-title" style="margin-bottom:.75rem">בקשה חדשה</div>
+        <div class="form-row">
+          <span class="form-lbl">מתאריך</span>
+          <input type="date" class="date-inp" id="req-from">
+          <span class="form-lbl" style="min-width:30px">עד</span>
+          <input type="date" class="date-inp" id="req-to">
+        </div>
+        <div class="form-row" style="flex-direction:column;align-items:flex-start">
+          <span class="form-lbl" style="margin-bottom:4px">הערה</span>
+          <textarea class="note-inp" id="req-note" rows="2" placeholder="סיבה / הערה (אופציונלי)"></textarea>
+        </div>
+        <button class="btn btn-submit" onclick="submitRequest()"><i class="ti ti-send"></i>שלח בקשה</button>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:.6rem">הבקשות שלי</div>
+        <div id="my-requests-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANAGER -->
+  <div id="tab-manager" style="display:none">
+    <div class="page-title" style="margin-bottom:1rem"><i class="ti ti-clipboard-check"></i>ניהול בקשות חופש</div>
+    <div id="pending-list"></div>
+    <div style="font-size:13px;font-weight:600;margin:1rem 0 .6rem;padding-top:.75rem;border-top:0.5px solid var(--border)">היסטוריה</div>
+    <div id="history-list"></div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div id="tab-calendar" style="display:none">
+    <div class="cal-top">
+      <div class="page-title"><i class="ti ti-calendar-month"></i>לוח חופשות מאושרות</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="btn btn-sm" onclick="chgMonth(-1)"><i class="ti ti-chevron-right"></i></button>
+        <span class="cal-month-lbl" id="cal-month-lbl"></span>
+        <button class="btn btn-sm" onclick="chgMonth(1)"><i class="ti ti-chevron-left"></i></button>
+      </div>
+    </div>
+    <div class="cal">
+      <div class="cal-head">
+        <div class="cal-dh">א</div><div class="cal-dh">ב</div><div class="cal-dh">ג</div>
+        <div class="cal-dh">ד</div><div class="cal-dh">ה</div><div class="cal-dh">ו</div><div class="cal-dh">ש</div>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+    <div class="legend" style="margin-top:.75rem">
+      <span class="li"><span class="dot" style="background:#378ADD"></span>אמיר</span>
+      <span class="li"><span class="dot" style="background:#EF9F27"></span>תוג'אן</span>
+      <span class="li"><span class="dot" style="background:#1D9E75"></span>גל</span>
+    </div>
+  </div>
+</div><!-- /container -->
+</div><!-- /main-app -->
+
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+// ── CONFIG ──
+const WORKERS=[
+  {id:'amir',  name:'אמיר',   acls:'a-amir',  avcls:'av-amir',  dot:'#378ADD',init:'אמ',calCls:'vt-amir'},
+  {id:'toujan',name:"תוג'אן", acls:'a-toujan',avcls:'av-toujan',dot:'#EF9F27',init:'תו',calCls:'vt-toujan'},
+  {id:'gal',   name:'גל',     acls:'a-gal',   avcls:'av-gal',   dot:'#1D9E75',init:'גל',calCls:'vt-gal'}
+];
+const DAYS=[
+  {sh:"א'",label:'ראשון'},{sh:"ב'",label:'שני'},{sh:"ג'",label:'שלישי'},
+  {sh:"ד'",label:'רביעי'},{sh:"ה'",label:'חמישי'},{sh:"ו'",label:'שישי'},{sh:"שב'",label:'שבת'}
+];
+const SHIFTS=[
+  {id:'morning',label:'בוקר 08:00–15:00',days:[0,1,2,3,4]},
+  {id:'evening',label:'ערב 15:00–23:30', days:[0,1,2,3,4]},
+  {id:'fri',    label:'שישי מהבית',       days:[5]},
+  {id:'sat',    label:'שבת 14:00–22:30', days:[6]}
+];
+const MONTHS_HE=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+
+// ── STATE ──
+// ── EMAILJS CONFIG ──
+const EJS_SERVICE = 'service_dnvy6p8';
+const EJS_TEMPLATE_REQUEST = 'template_v14olsm';
+const EJS_TEMPLATE_REPLY   = 'template_gsj7m1c';
+const EJS_PUBLIC_KEY = 'AuQvlX9lCdOzqo1F4';
+const WORKER_EMAILS = {
+  amir:   'amirbe@kan.org.il',
+  toujan: 'Tojanma@kan.org.il',
+  gal:    'galv@kan.org.il'
+};
+const MANAGER_EMAIL = 'shlomoa@kan.org.il';
+
+async function sendRequestEmail(req) {
+  const w=WORKERS.find(x=>x.id===req.wid);
+  try {
+    await emailjs.send(EJS_SERVICE, EJS_TEMPLATE_REQUEST, {
+      worker_name: w.name,
+      from_date: fmtDate(req.from),
+      to_date: fmtDate(req.to),
+      note: req.note||'—',
+      to_email: MANAGER_EMAIL
+    });
+  } catch(e){console.log('email err',e);}
+}
+
+async function sendReplyEmail(req,status) {
+  const w=WORKERS.find(x=>x.id===req.wid);
+  const workerEmail=WORKER_EMAILS[req.wid];
+  if(!workerEmail)return;
+  try {
+    await emailjs.send(EJS_SERVICE, EJS_TEMPLATE_REPLY, {
+      worker_name: w.name,
+      worker_email: workerEmail,
+      from_date: fmtDate(req.from),
+      to_date: fmtDate(req.to),
+      status: status==='approved'?'אושרה ✓':'נדחתה ✕',
+      status_color: status==='approved'?'#0F6E56':'#A32D2D',
+      to_email: workerEmail
+    });
+  } catch(e){console.log('email err',e);}
+}
+
+// ── SUPABASE CONFIG ──
+const SUPA_URL = 'https://ymcuylomrwnlpkwfufse.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltY3V5bG9tcndubHBrd2Z1ZnNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5Nzk5NTcsImV4cCI6MjA5ODU1NTk1N30.PEOAhGg-1CJPV26CQ3ndHy1oab8M1O27ngx0sF0eSCU';
+const SUPA_SECRET = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltY3V5bG9tcndubHBrd2Z1ZnNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5Nzk5NTcsImV4cCI6MjA5ODU1NTk1N30.PEOAhGg-1CJPV26CQ3ndHy1oab8M1O27ngx0sF0eSCU';
+const TABLE = 'schedule_data';
+
+let editMode=false, subs=[], schedule={}, constraints={}, varData={}, weekOff=0, openCell=null, openVarDay=null;
+let selectedWorker=null, requests=[], calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
+let syncStatus='';
+let autoSaveTimer=null;
+
+// ── INIT ──
+function init() {
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('main-app').style.display='block';
+  loadFromServer();
+}
+
+// ── SERVER SYNC ──
+function setSyncStatus(s, msg) {
+  syncStatus = s;
+  const el = document.getElementById('sync-indicator');
+  const icons = {syncing:'ti-refresh',synced:'ti-cloud-check',error:'ti-cloud-off',offline:'ti-wifi-off'};
+  const msgs = {syncing:'מסנכרן...',synced:'מסונכרן',error:'שגיאת סנכרון',offline:'אין חיבור'};
+  el.innerHTML = `<div class="sync-bar ${s}"><i class="ti ${icons[s]}"></i>${msg||msgs[s]}</div>`;
+  if (s==='synced') setTimeout(()=>el.innerHTML='', 3000);
+}
+
+async function supaFetch(method, body) {
+  const url = method==='GET' 
+    ? `${SUPA_URL}/rest/v1/${TABLE}?select=*`
+    : `${SUPA_URL}/rest/v1/${TABLE}?on_conflict=id`;
+  const res = await fetch(url, {
+    method: method==='POST' ? 'POST' : method,
+    cache: 'no-store',
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': `Bearer ${SUPA_SECRET}`,
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache',
+      'Prefer': method==='POST' ? 'resolution=merge-duplicates,return=minimal' : 'return=representation'
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('Supabase error:', errText);
+    throw new Error(errText);
+  }
+  return method==='GET' ? res.json() : res;
+}
+
+async function loadFromServer() {
+  setSyncStatus('syncing');
+  try {
+    const rows = await supaFetch('GET');
+    if (rows && rows.length > 0) {
+      const d = rows[0];
+      if (d.schedule_json) schedule = JSON.parse(d.schedule_json);
+      if (d.constraints_json) constraints = JSON.parse(d.constraints_json);
+      if (d.var_json) varData = JSON.parse(d.var_json);
+      if (d.subs_json) subs = JSON.parse(d.subs_json);
+      if (d.requests_json) requests = JSON.parse(d.requests_json);
+    }
+    setSyncStatus('synced');
+  } catch(e) {
+    setSyncStatus('offline','שגיאת חיבור: '+(e&&e.message?e.message:e));
+    loadLocal();
+  }
+  render(); renderCalendar(); updatePendingBadge();
+}
+
+async function saveToServer() {
+  setSyncStatus('syncing');
+  saveLocal();
+  try {
+    await supaFetch('POST', {
+      id: 1,
+      schedule_json: JSON.stringify(schedule),
+      constraints_json: JSON.stringify(constraints),
+      var_json: JSON.stringify(varData),
+      subs_json: JSON.stringify(subs),
+      requests_json: JSON.stringify(requests)
+    });
+    setSyncStatus('synced');
+  } catch(e) {
+    setSyncStatus('error');
+  }
+}
+
+function scheduleAutoSave() {
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(saveToServer, 1500);
+}
+
+// ── AUTO REFRESH every 30 seconds ──
+setInterval(()=>{
+  if(!editMode) loadFromServer();
+}, 30000);
+
+function saveLocal() {
+  localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests}));
+}
+
+function loadLocal() {
+  try {
+    const d = JSON.parse(localStorage.getItem('scheduleData')||'{}');
+    if (d.schedule) schedule=d.schedule;
+    if (d.constraints) constraints=d.constraints;
+    if (d.varData) varData=d.varData;
+    if (d.subs) subs=d.subs;
+    if (d.requests) requests=d.requests;
+  } catch(e) {}
+}
+
+// ── HELPERS ──
+function wk(){return weekOff;}
+function sk(s,d){return `${wk()}_${s}_${d}`;}
+function ck(wid){return `${wk()}_c_${wid}`;}
+function vdk(di){return `${wk()}_var_${di}`;}
+function getVarDay(di){return varData[vdk(di)]||[];}
+function setVarWorker(di,wid,status){const k=vdk(di);if(!varData[k])varData[k]=[];const ex=varData[k].findIndex(x=>x.wid===wid);if(status==='off'){if(ex>=0)varData[k].splice(ex,1);}else{if(ex>=0)varData[k][ex].status=status;else varData[k].push({wid,status});}}
+function getWorkerVarStatus(di,wid){const e=getVarDay(di).find(x=>x.wid===wid);return e?e.status:'off';}
+function isBlocked(wid,sid,di){return((constraints[ck(wid)]||{})[`${sid}_${di}`]||'ok')==='blocked';}
+function getWeekStart(off){const d=new Date(),day=d.getDay(),diff=d.getDate()-day;const s=new Date(d);s.setDate(diff+off*7);s.setHours(0,0,0,0);return s;}
+function fmtWeek(s){const e=new Date(s);e.setDate(e.getDate()+6);const f=d=>d.toLocaleDateString('he-IL',{day:'numeric',month:'numeric'});return f(s)+' — '+f(e);}
+function chgWk(d){weekOff+=d;openCell=null;openVarDay=null;render();}
+function workerCount(wid){
+  let t=0;
+  // count regular shifts only on days with no var entry
+  SHIFTS.forEach(s=>s.days.forEach(di=>{
+    if(schedule[sk(s.id,di)]===wid){
+      const varEntries=getVarDay(di);
+      const hasVar=varEntries.find(e=>e.wid===wid);
+      if(!hasVar) t++;
+    }
+  }));
+  // count var row entries as shifts
+  DAYS.forEach((day,di)=>{
+    const entries=getVarDay(di);
+    if(entries.find(e=>e.wid===wid)) t++;
+  });
+  return t;
+}
+function dateStr(d){return d.toISOString().slice(0,10);}
+function fmtDate(s){if(!s)return '';const[y,m,dd]=s.split('-');return `${parseInt(dd)}/${parseInt(m)}/${y}`;}
+function fmtRange(f,t){return f===t?fmtDate(f):`${fmtDate(f)} — ${fmtDate(t)}`;}
+function pendingCount(){return requests.filter(r=>r.status==='pending').length;}
+function isApprovedVacDay(wid,weekStart,di){const d=new Date(weekStart);d.setDate(d.getDate()+di);const ds=dateStr(d);return requests.some(r=>r.wid===wid&&r.status==='approved'&&ds>=r.from&&ds<=r.to);}
+function updatePendingBadge(){const n=pendingCount();const b=document.getElementById('pending-badge');b.textContent=n;b.style.display=n>0?'':'none';}
+
+// ── TABS ──
+function swTab(tab,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['schedule','myconstraints','requests','manager','calendar'].forEach(t=>{document.getElementById('tab-'+t).style.display=t===tab?'block':'none';});
+  if(tab==='requests')renderRequestsTab();
+  if(tab==='manager')renderManagerTab();
+  if(tab==='myconstraints')renderMyConstraintsTab();
+  if(tab==='calendar')renderCalendar();
+  if(tab==='schedule'){openCell=null;openVarDay=null;render();}
+}
+
+// ── SCHEDULE ──
+function toggleEdit(){
+  if(!editMode){
+    const pw=prompt('סיסמת מנהל:');
+    if(pw!=='4466') return;
+  }
+  editMode=!editMode;openCell=null;openVarDay=null;document.getElementById('cell-popup').innerHTML='';render();
+}
+function render(){
+  document.getElementById('wlabel').textContent=fmtWeek(getWeekStart(weekOff));
+  const badge=document.getElementById('mode-badge'),btn=document.getElementById('toggle-btn');
+  if(editMode){
+    badge.innerHTML='<span class="edit-badge"><i class="ti ti-pencil"></i>מצב עריכה</span>';
+    btn.className='btn btn-view';btn.innerHTML='<i class="ti ti-eye"></i>מצב צפייה';
+    document.getElementById('btn-auto').style.display='';document.getElementById('btn-clear').style.display='';
+    document.getElementById('btn-save').style.display='';document.getElementById('btn-screenshot').style.display='';document.getElementById('edit-panels').style.display='';
+  } else {
+    badge.innerHTML='<span class="view-badge"><i class="ti ti-eye"></i>צפייה בלבד</span>';
+    btn.className='btn btn-edit';btn.innerHTML='<i class="ti ti-pencil"></i>ערוך';
+    document.getElementById('btn-auto').style.display='none';document.getElementById('btn-clear').style.display='none';
+    document.getElementById('btn-save').style.display='none';document.getElementById('btn-screenshot').style.display='none';document.getElementById('edit-panels').style.display='none';
+  }
+  renderStats();renderWarn();renderGrid();updatePendingBadge();
+  if(editMode){renderConstraints();renderSubs();}
+  renderAllConstraintsBoard();
+}
+function renderStats(){
+  const counts=WORKERS.map(w=>({name:w.name,n:workerCount(w.id)}));
+  // total = only regular schedule shifts (not var row)
+  let regularTotal=0;
+  SHIFTS.forEach(s=>s.days.forEach(di=>{if(schedule[sk(s.id,di)])regularTotal++;}));
+  document.getElementById('stats-row').innerHTML=counts.map(c=>`<div class="stat"><div class="stat-lbl">${c.name}</div><div class="stat-val ${c.n===5?'ok':c.n>5?'err':'warn'}">${c.n}/5</div></div>`).join('')+`<div class="stat"><div class="stat-lbl">סה"כ</div><div class="stat-val">${regularTotal}/12</div></div>`;
+}
+function renderWarn(){const ws=WORKERS.filter(w=>workerCount(w.id)!==5).map(w=>`${w.name}: ${workerCount(w.id)}/5`);document.getElementById('warn-area').innerHTML=ws.length?`<div class="warn-bar"><i class="ti ti-alert-triangle"></i>${ws.join(' | ')}</div>`:'';}
+function renderGrid(){
+  const weekStart=getWeekStart(weekOff);const g=document.getElementById('main-grid');
+  let html=`<div class="g-head"><div class="ghc" style="border-left:none">משמרת</div>${DAYS.map(d=>`<div class="ghc">${d.sh}</div>`).join('')}</div>`;
+  SHIFTS.forEach(shift=>{
+    html+=`<div class="g-row"><div class="rlbl">${shift.label}</div>`;
+    DAYS.forEach((day,di)=>{
+      if(!shift.days.includes(di)){html+=`<div class="cell na"></div>`;return;}
+      const k=sk(shift.id,di),assigned=schedule[k];
+      const vacCls=WORKERS.some(w=>isApprovedVacDay(w.id,weekStart,di))?' vac-day':'';
+      if(assigned){
+        const w=WORKERS.find(x=>x.id===assigned);const cls=w?w.acls:'a-sub';const name=w?w.name:assigned;
+        html+=`<div class="cell${vacCls}${editMode?' clickable':''}" ${editMode?`onclick="togglePopup('${shift.id}',${di},'${k}')"`:''}><div class="asgn ${cls}">${name}`;
+        if(editMode)html+=`<button class="rmvbtn" onclick="event.stopPropagation();rem('${k}')" title="הסר">✕</button>`;
+        html+=`</div></div>`;
+      } else {html+=editMode?`<div class="cell${vacCls} clickable" onclick="togglePopup('${shift.id}',${di},'${k}')"><div class="plus">+</div></div>`:`<div class="cell${vacCls}"></div>`;}
+    });
+    html+=`</div>`;
+  });
+  html+=`<div class="var-row"><div class="var-lbl">משתנה</div>`;
+  DAYS.forEach((day,di)=>{
+    const entries=getVarDay(di);
+    if(editMode){
+      html+=`<div class="var-cell clickable" onclick="toggleVarDay(${di})">`;
+      entries.forEach(e=>{const cls=e.status==='cam'?'cam':'field';const wname=WORKERS.find(w=>w.id===e.wid)?.name||e.wid;html+=`<div class="var-tag-wrap"><span class="var-tag-inner ${cls}">${wname}: ${e.status==='cam'?'צלם':'שטח'}</span><button class="var-rmv ${cls}" onclick="event.stopPropagation();setVarWorker(${di},'${e.wid}','off');render()" title="הסר">✕</button></div>`;});
+      if(!entries.length)html+=`<div class="var-plus">+</div>`;else html+=`<span style="font-size:9px;color:var(--text-muted);opacity:.5">✎</span>`;
+      html+=`</div>`;
+    } else {html+=`<div class="var-cell">`;entries.forEach(e=>{const cls=e.status==='cam'?'cam':'field';const wname=WORKERS.find(w=>w.id===e.wid)?.name||e.wid;html+=`<div class="var-tag ${cls}">${wname}: ${e.status==='cam'?'צלם':'שטח'}</div>`;});html+=`</div>`;}
+  });
+  html+=`</div>`;
+  g.innerHTML=html;
+  if(openCell)renderPopup();if(openVarDay!==null&&editMode)renderVarPopup();
+}
+function toggleVarDay(di){if(openVarDay===di){openVarDay=null;document.getElementById('cell-popup').innerHTML='';render();return;}openCell=null;openVarDay=di;render();}
+function renderVarPopup(){const di=openVarDay;const day=DAYS[di];let html=`<div class="var-popup"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem"><span style="font-size:13px;font-weight:600">${day.label} — משתנה</span><button class="btn btn-sm" onclick="openVarDay=null;document.getElementById('cell-popup').innerHTML='';render()">סגור</button></div>`;WORKERS.forEach(w=>{const cur=getWorkerVarStatus(di,w.id);html+=`<div class="vw-row"><span class="vw-name"><span class="dot" style="background:${w.dot}"></span>${w.name}</span><div class="vw-btns"><button class="vw-btn cam ${cur==='cam'?'active':''}" onclick="setVarWorker(${di},'${w.id}','cam');render()">צלם</button><button class="vw-btn field ${cur==='field'?'active':''}" onclick="setVarWorker(${di},'${w.id}','field');render()">שטח</button><button class="vw-btn off ${cur==='off'?'active':''}" onclick="setVarWorker(${di},'${w.id}','off');render()">לא יוצא</button></div></div>`;});html+=`</div>`;document.getElementById('cell-popup').innerHTML=html;}
+function togglePopup(sid,di,k){if(openCell&&openCell.k===k){openCell=null;document.getElementById('cell-popup').innerHTML='';render();return;}openVarDay=null;openCell={sid,di,k};render();}
+function renderPopup(){if(!openCell)return;const{sid,di,k}=openCell;const shift=SHIFTS.find(s=>s.id===sid),day=DAYS[di];const allW=[...WORKERS,...subs.map(s=>({id:s,name:s,acls:'a-sub',dot:'#888'}))];const avail=[],blocked=[];allW.forEach(w=>{const isW=!!WORKERS.find(x=>x.id===w.id);if(isW&&isBlocked(w.id,sid,di))blocked.push(w);else avail.push(w);});let html=`<div class="popup-box"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span class="pop-title" style="margin:0">${day.label} — ${shift.label}</span><button class="btn btn-sm" onclick="openCell=null;document.getElementById('cell-popup').innerHTML='';render()">סגור</button></div>`;avail.forEach(w=>{html+=`<button class="pop-opt" onclick="doAssign('${k}','${w.id}')"><span class="dot" style="background:${w.dot||'#888'}"></span>${w.name}</button>`;});if(blocked.length){html+=`<div style="font-size:11px;color:#A32D2D;margin:5px 0 2px">חסומים — שיבוץ בכוח</div>`;blocked.forEach(w=>{html+=`<button class="pop-opt blocked" onclick="doAssign('${k}','${w.id}')"><span class="dot" style="background:#E24B4A"></span>${w.name}</button>`;});}html+=`</div>`;document.getElementById('cell-popup').innerHTML=html;}
+function doAssign(k,wid){schedule[k]=wid;openCell=null;document.getElementById('cell-popup').innerHTML='';scheduleAutoSave();render();}
+function rem(k){delete schedule[k];openCell=null;document.getElementById('cell-popup').innerHTML='';scheduleAutoSave();render();}
+function autoFill(){const allW=[...WORKERS,...subs.map(s=>({id:s}))];const cnt={};allW.forEach(w=>cnt[w.id]=workerCount(w.id));SHIFTS.forEach(shift=>{shift.days.forEach(di=>{const k=sk(shift.id,di);if(schedule[k])return;const cands=allW.filter(w=>{if(isBlocked(w.id,shift.id,di))return false;if(WORKERS.find(x=>x.id===w.id)&&cnt[w.id]>=5)return false;return true;}).sort((a,b)=>cnt[a.id]-cnt[b.id]);if(cands[0]){schedule[k]=cands[0].id;cnt[cands[0].id]++;}});});openCell=null;scheduleAutoSave();render();}
+function clearAll(){SHIFTS.forEach(s=>s.days.forEach(di=>{delete schedule[sk(s.id,di)];}));openCell=null;scheduleAutoSave();render();}
+function renderConstraints(){const el=document.getElementById('constraint-editor');let html='';WORKERS.forEach(w=>{const c=constraints[ck(w.id)]||{};html+=`<div class="crow"><div class="avatar ${w.avcls}">${w.init}</div><div style="flex:1"><div style="font-size:12px;font-weight:600;margin-bottom:5px">${w.name}</div><div class="pills">`;SHIFTS.forEach(shift=>{shift.days.forEach(di=>{const ck2=`${shift.id}_${di}`;const st=c[ck2]||'ok';const lbl=`${DAYS[di].sh} ${shift.id==='morning'?'בוקר':shift.id==='evening'?'ערב':shift.id==='fri'?'שישי':'שבת'}`;html+=`<span class="pill ${st}" onclick="toggleC('${w.id}','${ck2}')">${lbl}</span>`;});});html+=`</div><div style="font-size:10px;color:var(--text-muted);margin-top:4px">לחץ לסימון/ביטול חסימה</div></div></div>`;});el.innerHTML=html;}
+function toggleC(wid,ck2){const k=ck(wid);if(!constraints[k])constraints[k]={};const cur=constraints[k][ck2]||'ok';constraints[k][ck2]=cur==='ok'?'blocked':'ok';scheduleAutoSave();render();}
+function addSub(){const inp=document.getElementById('sub-inp');const v=inp.value.trim();if(v&&!subs.includes(v)){subs.push(v);inp.value='';scheduleAutoSave();renderSubs();}}
+function removeSub(i){const n=subs[i];subs.splice(i,1);Object.keys(schedule).forEach(k=>{if(schedule[k]===n)delete schedule[k];});scheduleAutoSave();renderSubs();render();}
+function renderSubs(){const el=document.getElementById('sub-chips');el.innerHTML=subs.length?subs.map((s,i)=>`<span class="schip"><span class="dot" style="background:#888"></span>${s}<button onclick="removeSub(${i})">✕</button></span>`).join(''):`<span style="color:var(--text-muted);font-size:12px">אין ממלאי מקום עדיין</span>`;}
+
+// ── REQUESTS ──
+function renderRequestsTab(){
+  const sel=document.getElementById('worker-sel');
+  sel.innerHTML=WORKERS.map(w=>`<button class="wsel-btn${selectedWorker===w.id?' active-'+w.id:''}" onclick="selectWorker('${w.id}')">${w.name}</button>`).join('');
+  document.getElementById('req-form-area').style.display=selectedWorker?'block':'none';
+  if(selectedWorker){const today=dateStr(new Date());const fi=document.getElementById('req-from'),ti=document.getElementById('req-to');if(!fi.value)fi.value=today;if(!ti.value)ti.value=today;renderMyRequests();}
+}
+function selectWorker(wid){selectedWorker=wid;renderRequestsTab();}
+async function submitRequest(){
+  if(!selectedWorker)return;
+  const from=document.getElementById('req-from').value,to=document.getElementById('req-to').value,note=document.getElementById('req-note').value.trim();
+  if(!from||!to)return;
+  const f=from<=to?from:to,t=from<=to?to:from;
+  const req={wid:selectedWorker,from:f,to:t,note,id:Date.now(),ts:Date.now(),status:'pending'};
+  setSyncStatus('syncing');
+  requests.push(req);
+  saveLocal();
+  try {
+    await saveToServer();
+    await sendRequestEmail(req);
+  } catch(e){ setSyncStatus('offline','נשמר מקומית'); }
+  document.getElementById('req-note').value='';
+  setSyncStatus('synced','בקשה נשלחה!');renderMyRequests();updatePendingBadge();
+}
+function renderMyRequests(){
+  const el=document.getElementById('my-requests-list');const mine=requests.filter(r=>r.wid===selectedWorker).sort((a,b)=>b.ts-a.ts);
+  if(!mine.length){el.innerHTML=`<div class="empty-state">אין בקשות עדיין</div>`;return;}
+  const sLbl={pending:'ממתין לאישור',approved:'אושר ✓',rejected:'נדחה'};const sCls={pending:'status-pending',approved:'status-approved',rejected:'status-rejected'};
+  el.innerHTML=mine.map(r=>`<div class="req-card"><div><div class="req-dates">${fmtRange(r.from,r.to)}</div>${r.note?`<div class="req-note">${r.note}</div>`:''}</div><span class="status-pill ${sCls[r.status]}">${sLbl[r.status]}</span></div>`).join('');
+}
+
+// ── MANAGER ──
+function renderManagerTab(){
+  const pending=requests.filter(r=>r.status==='pending').sort((a,b)=>a.ts-b.ts);
+  const history=requests.filter(r=>r.status!=='pending').sort((a,b)=>b.ts-a.ts);
+  document.getElementById('pending-list').innerHTML=!pending.length?`<div class="empty-state"><i class="ti ti-check" style="font-size:22px;display:block;margin-bottom:6px;color:#0F6E56"></i>אין בקשות ממתינות</div>`:pending.map(r=>mgrCard(r,true)).join('');
+  document.getElementById('history-list').innerHTML=!history.length?`<div style="font-size:12px;color:var(--text-muted)">אין היסטוריה</div>`:history.map(r=>mgrCard(r,false)).join('');
+}
+function mgrCard(r,showActions){const w=WORKERS.find(x=>x.id===r.wid);const sLbl={pending:'ממתין',approved:'אושר',rejected:'נדחה'};const sCls={pending:'status-pending',approved:'status-approved',rejected:'status-rejected'};return `<div class="mgr-req-card"><div class="mgr-req-top"><div class="avatar ${w.avcls}">${w.init}</div><span class="mgr-req-name">${w.name}</span><span style="font-size:12px;color:var(--text-muted)">${fmtRange(r.from,r.to)}</span>${!showActions?`<span class="status-pill ${sCls[r.status]}">${sLbl[r.status]}</span>`:''}</div>${r.note?`<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">${r.note}</div>`:''}${showActions?`<div class="mgr-req-actions"><button class="btn btn-approve btn-sm" onclick="decideRequest(${r.id},'approved')"><i class="ti ti-check"></i>אשר</button><button class="btn btn-reject btn-sm" onclick="decideRequest(${r.id},'rejected')"><i class="ti ti-x"></i>דחה</button></div>`:''}</div>`;}
+async function decideRequest(id,status){
+  const r=requests.find(x=>x.id===id);if(!r)return;r.status=status;
+  setSyncStatus('syncing');
+  saveLocal();
+  try{await saveToServer();}catch(e){setSyncStatus('offline');}
+  await sendReplyEmail(r,status);
+  const w=WORKERS.find(x=>x.id===r.wid);
+  showToast(status==='approved'?`✓ חופש ${w.name} אושר — מייל נשלח`:`✕ בקשת ${w.name} נדחתה — מייל נשלח`);
+  setSyncStatus('synced');renderManagerTab();updatePendingBadge();renderCalendar();
+}
+
+// ── CALENDAR ──
+function chgMonth(d){calMonth+=d;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCalendar();}
+function renderCalendar(){
+  document.getElementById('cal-month-lbl').textContent=`${MONTHS_HE[calMonth]} ${calYear}`;
+  const grid=document.getElementById('cal-grid'),firstDay=new Date(calYear,calMonth,1).getDay(),daysInMonth=new Date(calYear,calMonth+1,0).getDate(),todayStr=dateStr(new Date());
+  let html='';for(let i=0;i<firstDay;i++)html+=`<div class="cal-cell empty-cal"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday=ds===todayStr;const vacs=requests.filter(r=>r.status==='approved'&&ds>=r.from&&ds<=r.to);
+    let bg='';
+    if(vacs.length===1){
+      const w=WORKERS.find(x=>x.id===vacs[0].wid);
+      if(w?.id==='amir')bg='background:#C8E0F7;';
+      else if(w?.id==='toujan')bg='background:#FDE8B0;';
+      else if(w?.id==='gal')bg='background:#A8EDD1;';
+    }else if(vacs.length>1)bg='background:linear-gradient(135deg,#C8E0F7 50%,#A8EDD1 50%);';
+    const tags=vacs.map(v=>{const w=WORKERS.find(x=>x.id===v.wid);return `<div class="vac-tag-cal ${w?.calCls||''}">${w?.name||v.wid} — חופש</div>`;}).join('');
+    html+=`<div class="cal-cell${isToday?' today':''}" style="${bg}"><div class="day-num">${d}</div>${tags}</div>`;
+  }
+  grid.innerHTML=html;
+}
+
+// ── TOAST ──
+// ── MY CONSTRAINTS ──
+let constraintWorker=null;
+function renderMyConstraintsTab(){
+  const sel=document.getElementById('constraint-worker-sel');
+  sel.innerHTML=WORKERS.map(w=>`<button class="wsel-btn${constraintWorker===w.id?' active-'+w.id:''}" onclick="selectConstraintWorker('${w.id}')">${w.name}</button>`).join('');
+  document.getElementById('my-constraints-area').style.display=constraintWorker?'block':'none';
+  if(constraintWorker) renderMyPills();
+  renderAllConstraintsBoard();
+}
+function renderAllConstraintsBoard(){
+  const el=document.getElementById('all-constraints-board');
+  if(!el) return;
+  let html='';
+  WORKERS.forEach(w=>{
+    const c=constraints[ck(w.id)]||{};
+    html+=`<div class="crow"><div class="avatar ${w.avcls}">${w.init}</div><div style="flex:1"><div style="font-size:12px;font-weight:600;margin-bottom:5px">${w.name}</div><div class="pills">`;
+    SHIFTS.forEach(shift=>{
+      shift.days.forEach(di=>{
+        const ck2=`${shift.id}_${di}`;
+        const st=c[ck2]||'ok';
+        const lbl=`${DAYS[di].sh} ${shift.id==='morning'?'בוקר':shift.id==='evening'?'ערב':shift.id==='fri'?'שישי':'שבת'}`;
+        html+=`<span class="pill ${st}" style="pointer-events:none">${lbl}</span>`;
+      });
+    });
+    html+='</div></div></div>';
+  });
+  el.innerHTML=html;
+}
+function selectConstraintWorker(wid){constraintWorker=wid;renderMyConstraintsTab();}
+function renderMyPills(){
+  const el=document.getElementById('my-pills-area');
+  const c=constraints[ck(constraintWorker)]||{};
+  let html='<div class="pills">';
+  SHIFTS.forEach(shift=>{
+    shift.days.forEach(di=>{
+      const ck2=`${shift.id}_${di}`;
+      const st=c[ck2]||'ok';
+      const lbl=`${DAYS[di].sh} ${shift.id==='morning'?'בוקר':shift.id==='evening'?'ערב':shift.id==='fri'?'שישי':'שבת'}`;
+      html+=`<span class="pill ${st}" onclick="toggleMyConstraint('${ck2}')">${lbl}</span>`;
+    });
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+function toggleMyConstraint(ck2){
+  const k=ck(constraintWorker);
+  if(!constraints[k])constraints[k]={};
+  const cur=constraints[k][ck2]||'ok';
+  constraints[k][ck2]=cur==='ok'?'blocked':'ok';
+  renderMyPills();
+  renderAllConstraintsBoard();
+  scheduleAutoSave();
+  const el=document.getElementById('my-constraints-status');
+  if(el) el.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:.5rem 0"><i class="ti ti-cloud-upload"></i> נשמר אוטומטית...</div>';
+}
+async function saveMyConstraints(){
+  const el=document.getElementById('my-constraints-status');
+  el.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:.5rem 0">שולח...</div>';
+  try {
+    await saveToServer();
+    const w=WORKERS.find(x=>x.id===constraintWorker);
+    el.innerHTML=`<div style="background:#E1F5EE;border:0.5px solid #5DCAA5;border-radius:8px;padding:.75rem;font-size:13px;color:#085041;display:flex;align-items:center;gap:6px"><i class="ti ti-check"></i>האילוצים של ${w.name} נשלחו למנהל בהצלחה!</div>`;
+  } catch(e){
+    saveLocal();
+    el.innerHTML=`<div style="background:#E1F5EE;border:0.5px solid #5DCAA5;border-radius:8px;padding:.75rem;font-size:13px;color:#085041">נשמר — יסתנכרן כשיהיה חיבור</div>`;
+  }
+}
+
+// ── SCREENSHOT ──
+async function takeScreenshot(){
+  const el=document.getElementById('main-grid');
+  if(!el){showToast('אין סידור להצגה');return;}
+  showToast('מכין תמונה...');
+
+  // hide edit elements temporarily
+  const rmvBtns=el.querySelectorAll('.rmvbtn,.var-rmv');
+  const varPlus=el.querySelectorAll('.var-plus');
+  const editHint=el.querySelectorAll('[style*="opacity:.5"]');
+  rmvBtns.forEach(b=>b.style.display='none');
+  varPlus.forEach(b=>b.style.display='none');
+
+  // temporarily remove overflow to capture full grid
+  const origOverflow=el.style.overflow;
+  const origOverflowX=el.style.overflowX;
+  el.style.overflow='visible';
+  el.style.overflowX='visible';
+
+  try {
+    const canvas=await html2canvas(el,{
+      scale:2,
+      backgroundColor:'#F9F9F8',
+      useCORS:true,
+      logging:false,
+      scrollX:0,
+      scrollY:0,
+      windowWidth:el.scrollWidth,
+      width:el.scrollWidth,
+      height:el.scrollHeight
+    });
+    // restore
+    el.style.overflow=origOverflow;
+    el.style.overflowX=origOverflowX;
+    rmvBtns.forEach(b=>b.style.display='');
+    varPlus.forEach(b=>b.style.display='');
+
+    const link=document.createElement('a');
+    const weekTxt=document.getElementById('wlabel').textContent.trim().replace(/\s+/g,'_').replace(/—/g,'-');
+    link.download=`סידור_${weekTxt}.png`;
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+    showToast('✓ התמונה נשמרה — שלח בוואצאפ או מייל');
+  } catch(e){
+    el.style.overflow=origOverflow;
+    el.style.overflowX=origOverflowX;
+    rmvBtns.forEach(b=>b.style.display='');
+    varPlus.forEach(b=>b.style.display='');
+    showToast('שגיאה בצילום — נסה שוב');
+  }
+}
+
+function showToast(msg){let t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1A1A1A;color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;z-index:9999;opacity:0;transition:opacity .25s;direction:rtl';document.body.appendChild(t);}t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity='0',3000);}
+
+// ── START ──
+emailjs.init(EJS_PUBLIC_KEY);
+init();
+window.addEventListener('online', ()=>loadFromServer());
+setTimeout(()=>{const inp=document.getElementById('sub-inp');if(inp)inp.addEventListener('keydown',e=>{if(e.key==='Enter')addSub();});},500);
+</script>
+</body>
+</html>
