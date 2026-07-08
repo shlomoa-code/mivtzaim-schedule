@@ -36,7 +36,9 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 .btn-submit{background:#378ADD;color:#fff;border-color:#378ADD;padding:9px 20px;font-size:14px;font-weight:500}
 .edit-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:500;background:#FEF4E6;color:#633806;border:0.5px solid #EF9F27}
 .view-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:500;background:#E1F5EE;color:#085041;border:0.5px solid #5DCAA5}
-.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px;position:relative}
+.topbar-logo{width:50px;height:50px;margin-right:10px}
+@media(max-width:640px){.topbar-logo{width:40px;height:40px;margin-right:5px}}
 .page-title{font-size:16px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:6px}
 .week-nav{display:flex;align-items:center;gap:5px}
 .wlabel{font-size:14px;color:var(--text-secondary);min-width:130px;text-align:center}
@@ -192,20 +194,23 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
   <!-- SCHEDULE -->
   <div id="tab-schedule">
     <div class="topbar">
-      <div class="page-title"><i class="ti ti-calendar-week"></i>סידור עבודה</div>
-      <div class="controls">
-        <span id="mode-badge"></span>
-        <button id="toggle-btn" class="btn" onclick="toggleEdit()"></button>
-        <div class="week-nav">
-          <button class="btn btn-sm" onclick="chgWk(-1)"><i class="ti ti-chevron-right"></i></button>
-          <span class="wlabel" id="wlabel"></span>
-          <button class="btn btn-sm" onclick="chgWk(1)"><i class="ti ti-chevron-left"></i></button>
+      <div style="display:flex;align-items:center;gap:1rem;flex:1">
+        <div class="page-title"><i class="ti ti-calendar-week"></i>סידור עבודה</div>
+        <div class="controls">
+          <span id="mode-badge"></span>
+          <button id="toggle-btn" class="btn" onclick="toggleEdit()"></button>
+          <div class="week-nav">
+            <button class="btn btn-sm" onclick="chgWk(-1)"><i class="ti ti-chevron-right"></i></button>
+            <span class="wlabel" id="wlabel"></span>
+            <button class="btn btn-sm" onclick="chgWk(1)"><i class="ti ti-chevron-left"></i></button>
+          </div>
+          <button class="btn btn-auto" id="btn-auto" onclick="autoFill()" style="display:none"><i class="ti ti-wand"></i>מלא אוטומטי</button>
+          <button class="btn btn-sm" id="btn-clear" onclick="clearAll()" style="display:none"><i class="ti ti-trash"></i></button>
+          <button class="btn btn-sm" id="btn-save" onclick="saveToServer()" style="display:none;background:#E1F5EE;color:#085041;border-color:#5DCAA5"><i class="ti ti-cloud-upload"></i>שמור</button>
+          <button class="btn btn-sm" id="btn-screenshot" onclick="takeScreenshot()" style="display:none;background:#FEF4E6;color:#633806;border-color:#EF9F27" title="צלם את הסידור לשליחה"><i class="ti ti-camera"></i>צלם</button>
         </div>
-        <button class="btn btn-auto" id="btn-auto" onclick="autoFill()" style="display:none"><i class="ti ti-wand"></i>מלא אוטומטי</button>
-        <button class="btn btn-sm" id="btn-clear" onclick="clearAll()" style="display:none"><i class="ti ti-trash"></i></button>
-        <button class="btn btn-sm" id="btn-save" onclick="saveToServer()" style="display:none;background:#E1F5EE;color:#085041;border-color:#5DCAA5"><i class="ti ti-cloud-upload"></i>שמור</button>
-        <button class="btn btn-sm" id="btn-screenshot" onclick="takeScreenshot()" style="display:none;background:#FEF4E6;color:#633806;border-color:#EF9F27" title="צלם את הסידור לשליחה"><i class="ti ti-camera"></i>צלם</button>
       </div>
+      <svg class="topbar-logo" viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg"><rect width="560" height="560" fill="#E24B4A" rx="80"/><text x="280" y="260" text-anchor="middle" font-size="100" font-weight="700" fill="#FFFFFF" font-family="Arial, sans-serif">מבצעים</text><g transform="translate(280, 420)"><circle cx="0" cy="0" r="32" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="20" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="8" fill="#FFFFFF"/></g></svg>
     </div>
     <div class="stats-row" id="stats-row"></div>
     <div id="warn-area"></div>
@@ -236,7 +241,10 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 
   <!-- MY CONSTRAINTS -->
   <div id="tab-myconstraints" style="display:none">
-    <div class="page-title" style="margin-bottom:1rem"><i class="ti ti-adjustments"></i>האילוצים שלי</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div class="page-title" style="margin-bottom:0"><i class="ti ti-adjustments"></i>האילוצים שלי</div>
+      <svg class="topbar-logo" viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg"><rect width="560" height="560" fill="#E24B4A" rx="80"/><text x="280" y="260" text-anchor="middle" font-size="100" font-weight="700" fill="#FFFFFF" font-family="Arial, sans-serif">מבצעים</text><g transform="translate(280, 420)"><circle cx="0" cy="0" r="32" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="20" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="8" fill="#FFFFFF"/></g></svg>
+    </div>
     <div style="font-size:12px;color:var(--text-muted);margin-bottom:.75rem">בחר את שמך וסמן את המשמרות שאתה לא יכול השבוע:</div>
     <div class="req-worker-sel" id="constraint-worker-sel"></div>
     <div id="my-constraints-area" style="display:none">
@@ -257,7 +265,10 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 
   <!-- REQUESTS -->
   <div id="tab-requests" style="display:none">
-    <div class="page-title" style="margin-bottom:1rem"><i class="ti ti-beach"></i>בקשת חופש</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div class="page-title" style="margin-bottom:0"><i class="ti ti-beach"></i>בקשת חופש</div>
+      <svg class="topbar-logo" viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg"><rect width="560" height="560" fill="#E24B4A" rx="80"/><text x="280" y="260" text-anchor="middle" font-size="100" font-weight="700" fill="#FFFFFF" font-family="Arial, sans-serif">מבצעים</text><g transform="translate(280, 420)"><circle cx="0" cy="0" r="32" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="20" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="8" fill="#FFFFFF"/></g></svg>
+    </div>
     <div style="font-size:12px;color:var(--text-muted);margin-bottom:.75rem">בחר את שמך:</div>
     <div class="req-worker-sel" id="worker-sel"></div>
     <div id="req-form-area" style="display:none">
@@ -284,7 +295,10 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 
   <!-- MANAGER -->
   <div id="tab-manager" style="display:none">
-    <div class="page-title" style="margin-bottom:1rem"><i class="ti ti-clipboard-check"></i>ניהול בקשות חופש</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div class="page-title" style="margin-bottom:0"><i class="ti ti-clipboard-check"></i>ניהול בקשות חופש</div>
+      <svg class="topbar-logo" viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg"><rect width="560" height="560" fill="#E24B4A" rx="80"/><text x="280" y="260" text-anchor="middle" font-size="100" font-weight="700" fill="#FFFFFF" font-family="Arial, sans-serif">מבצעים</text><g transform="translate(280, 420)"><circle cx="0" cy="0" r="32" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="20" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="8" fill="#FFFFFF"/></g></svg>
+    </div>
     <div id="pending-list"></div>
     <div style="font-size:13px;font-weight:600;margin:1rem 0 .6rem;padding-top:.75rem;border-top:0.5px solid var(--border)">היסטוריה</div>
     <div id="history-list"></div>
@@ -294,11 +308,12 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
   <div id="tab-calendar" style="display:none">
     <div class="cal-top">
       <div class="page-title"><i class="ti ti-calendar-month"></i>לוח חופשות מאושרות</div>
-      <div style="display:flex;align-items:center;gap:6px">
+      <div style="display:flex;align-items:center;gap:6px;margin-right:auto;margin-left:0">
         <button class="btn btn-sm" onclick="chgMonth(-1)"><i class="ti ti-chevron-right"></i></button>
         <span class="cal-month-lbl" id="cal-month-lbl"></span>
         <button class="btn btn-sm" onclick="chgMonth(1)"><i class="ti ti-chevron-left"></i></button>
       </div>
+      <svg class="topbar-logo" viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg"><rect width="560" height="560" fill="#E24B4A" rx="80"/><text x="280" y="260" text-anchor="middle" font-size="100" font-weight="700" fill="#FFFFFF" font-family="Arial, sans-serif">מבצעים</text><g transform="translate(280, 420)"><circle cx="0" cy="0" r="32" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="20" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="8" fill="#FFFFFF"/></g></svg>
     </div>
     <div class="cal">
       <div class="cal-head">
