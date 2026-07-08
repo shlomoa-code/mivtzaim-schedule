@@ -699,14 +699,15 @@ function renderCalendar(){
   for(let d=1;d<=daysInMonth;d++){
     const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday=ds===todayStr;const vacs=requests.filter(r=>r.status==='approved'&&ds>=r.from&&ds<=r.to);
+    const uniqueVacs=[];const seenWids=new Set();vacs.forEach(v=>{if(!seenWids.has(v.wid)){uniqueVacs.push(v);seenWids.add(v.wid);}});
     let bg='';
-    if(vacs.length===1){
-      const w=WORKERS.find(x=>x.id===vacs[0].wid);
+    if(uniqueVacs.length===1){
+      const w=WORKERS.find(x=>x.id===uniqueVacs[0].wid);
       if(w?.id==='amir')bg='background:#C8E0F7;';
       else if(w?.id==='toujan')bg='background:#FDE8B0;';
       else if(w?.id==='gal')bg='background:#A8EDD1;';
-    }else if(vacs.length>1)bg='background:linear-gradient(135deg,#C8E0F7 50%,#A8EDD1 50%);';
-    const tags=vacs.map(v=>{const w=WORKERS.find(x=>x.id===v.wid);return `<div class="vac-tag-cal ${w?.calCls||''}">${w?.name||v.wid} — חופש</div>`;}).join('');
+    }else if(uniqueVacs.length>1)bg='background:linear-gradient(135deg,#C8E0F7 50%,#A8EDD1 50%);';
+    const tags=uniqueVacs.map(v=>{const w=WORKERS.find(x=>x.id===v.wid);return `<div class="vac-tag-cal ${w?.calCls||''}">${w?.name||v.wid} — חופש</div>`;}).join('');
     html+=`<div class="cal-cell${isToday?' today':''}" style="${bg}"><div class="day-num">${d}</div>${tags}</div>`;
   }
   grid.innerHTML=html;
