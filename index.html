@@ -177,6 +177,18 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
   <div style="font-size:11px;color:var(--text-muted);margin-top:1rem">הכתובת נשמרת רק במכשיר שלך</div>
 </div>
 
+<!-- LOGIN SCREEN -->
+<div id="login-screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:linear-gradient(135deg,#E24B4A 0%,#A32D2D 100%);padding:2rem">
+  <div style="text-align:center;color:#fff">
+    <div style="font-size:80px;margin-bottom:1rem">מבצעים</div>
+    <div style="font-size:24px;font-weight:700;margin-bottom:2rem">כאן 11</div>
+    <div style="font-size:14px;margin-bottom:2rem;color:#ffffffcc">הכנס את האימייל שלך כדי להתחבר</div>
+    <input id="login-input" type="email" placeholder="example@kan.org.il" style="width:280px;padding:12px;border:none;border-radius:8px;font-size:14px;text-align:center;margin-bottom:1rem;font-family:inherit" />
+    <button class="btn" onclick="login()" style="width:280px;background:#fff;color:#E24B4A;border:none;padding:12px;font-weight:700;border-radius:8px;cursor:pointer;font-size:14px">כנס</button>
+    <div style="font-size:11px;color:#ffffffaa;margin-top:1.5rem">אמיר: amir@kan.org.il<br/>תוג'אן: toujan@kan.org.il<br/>גל: gal@kan.org.il<br/>מנהל: shlomoa@kan.org.il</div>
+  </div>
+</div>
+
 <!-- MAIN APP -->
 <div id="main-app" style="display:none">
 <div class="container">
@@ -184,6 +196,9 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
     <svg class="logo-svg" viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg"><rect width="560" height="560" fill="#E24B4A" rx="80"/><text x="280" y="260" text-anchor="middle" font-size="100" font-weight="700" fill="#FFFFFF" font-family="Arial, sans-serif">מבצעים</text><g transform="translate(280, 420)"><circle cx="0" cy="0" r="32" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="20" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="8" fill="#FFFFFF"/></g></svg>
   </div>
   <div id="sync-indicator"></div>
+  <div style="position:absolute;top:1rem;left:1rem">
+    <button class="btn btn-sm" onclick="logout()" title="התנתק"><i class="ti ti-logout"></i>התנתק</button>
+  </div>
 
   <div class="tabs">
     <button class="tab active" onclick="swTab('schedule',this)"><i class="ti ti-calendar-week"></i>סידור שבועי</button>
@@ -338,9 +353,9 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script>
 // ── CONFIG ──
 const WORKERS=[
-  {id:'amir',  name:'אמיר',   acls:'a-amir',  avcls:'av-amir',  dot:'#378ADD',init:'אמ',calCls:'vt-amir'},
-  {id:'toujan',name:"תוג'אן", acls:'a-toujan',avcls:'av-toujan',dot:'#EF9F27',init:'תו',calCls:'vt-toujan'},
-  {id:'gal',   name:'גל',     acls:'a-gal',   avcls:'av-gal',   dot:'#1D9E75',init:'גל',calCls:'vt-gal'}
+  {id:'amir',  name:'אמיר',   email:'amir@kan.org.il',   acls:'a-amir',  avcls:'av-amir',  dot:'#378ADD',init:'אמ',calCls:'vt-amir'},
+  {id:'toujan',name:"תוג'אן", email:'toujan@kan.org.il', acls:'a-toujan',avcls:'av-toujan',dot:'#EF9F27',init:'תו',calCls:'vt-toujan'},
+  {id:'gal',   name:'גל',     email:'gal@kan.org.il',    acls:'a-gal',   avcls:'av-gal',   dot:'#1D9E75',init:'גל',calCls:'vt-gal'}
 ];
 const DAYS=[
   {sh:"א'",label:'ראשון'},{sh:"ב'",label:'שני'},{sh:"ג'",label:'שלישי'},
@@ -403,12 +418,56 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const SUPA_SECRET = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltY3V5bG9tcndubHBrd2Z1ZnNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5Nzk5NTcsImV4cCI6MjA5ODU1NTk1N30.PEOAhGg-1CJPV26CQ3ndHy1oab8M1O27ngx0sF0eSCU';
 const TABLE = 'schedule_data';
 
-let editMode=false, subs=[], schedule={}, constraints={}, varData={}, weekOff=0, openCell=null, openVarDay=null;
+let editMode=false, subs=[], schedule={}, constraints={}, varData={}, weekOff=0, openCell=null, openVarDay=null, currentUser=null;
 let selectedWorker=null, requests=[], calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
 let syncStatus='';
 let autoSaveTimer=null;
 
 // ── INIT ──
+// ── LOGIN ──
+function checkLogin(){
+  const stored=localStorage.getItem('mivtzaim_user');
+  if(stored){
+    currentUser=stored;
+    showApp();
+  }else{
+    showLoginScreen();
+  }
+}
+function login(){
+  const input=document.getElementById('login-input').value.toLowerCase().trim();
+  if(input==='shlomoa@kan.org.il'){
+    currentUser='manager';
+    localStorage.setItem('mivtzaim_user','manager');
+    showApp();
+    return;
+  }
+  const w=WORKERS.find(x=>x.email.toLowerCase()===input);
+  if(w){
+    currentUser=w.id;
+    localStorage.setItem('mivtzaim_user',w.id);
+    showApp();
+  }else{
+    showToast('❌ קוד כניסה לא נכון');
+  }
+}
+function logout(){
+  currentUser=null;
+  localStorage.removeItem('mivtzaim_user');
+  document.getElementById('login-input').value='';
+  showLoginScreen();
+}
+function showApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('main-app').style.display='block';
+  init();
+}
+function showLoginScreen(){
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('main-app').style.display='none';
+  document.getElementById('login-input').focus();
+}
+
 function init() {
   document.getElementById('setup-screen').style.display='none';
   document.getElementById('main-app').style.display='block';
@@ -846,7 +905,7 @@ function showToast(msg){let t=document.getElementById('toast');if(!t){t=document
 
 // ── START ──
 emailjs.init(EJS_PUBLIC_KEY);
-init();
+checkLogin();
 window.addEventListener('online', ()=>loadFromServer());
 setTimeout(()=>{const inp=document.getElementById('sub-inp');if(inp)inp.addEventListener('keydown',e=>{if(e.key==='Enter')addSub();});},500);
 </script>
