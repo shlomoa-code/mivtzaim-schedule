@@ -418,7 +418,7 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const SUPA_SECRET = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltY3V5bG9tcndubHBrd2Z1ZnNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5Nzk5NTcsImV4cCI6MjA5ODU1NTk1N30.PEOAhGg-1CJPV26CQ3ndHy1oab8M1O27ngx0sF0eSCU';
 const TABLE = 'schedule_data';
 
-let editMode=false, subs=[], schedule={}, constraints={}, varData={}, weekOff=0, openCell=null, openVarDay=null, currentUser=null;
+let editMode=false, subs=[], schedule={}, constraints={}, varData={}, weekOff=1, openCell=null, openVarDay=null, currentUser=null;
 let selectedWorker=null, requests=[], calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
 let syncStatus='';
 let autoSaveTimer=null;
