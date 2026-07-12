@@ -519,6 +519,14 @@ async function loadFromServer() {
       if (d.var_json) varData = JSON.parse(d.var_json);
       if (d.subs_json) subs = JSON.parse(d.subs_json);
       if (d.requests_json) requests = JSON.parse(d.requests_json);
+      // DEBUG: show what weeks are in the data
+      const weeks = new Set();
+      Object.keys(schedule).forEach(k => {
+        const match = k.match(/^(-?\d+)_/);
+        if (match) weeks.add(match[1]);
+      });
+      console.log('📊 השבועות בנתונים:', Array.from(weeks).sort((a,b)=>a-b));
+      console.log('📌 weekOff כרגע:', weekOff);
     }
     setSyncStatus('synced');
   } catch(e) {
