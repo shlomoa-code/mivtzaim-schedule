@@ -418,7 +418,7 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const SUPA_SECRET = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltY3V5bG9tcndubHBrd2Z1ZnNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5Nzk5NTcsImV4cCI6MjA5ODU1NTk1N30.PEOAhGg-1CJPV26CQ3ndHy1oab8M1O27ngx0sF0eSCU';
 const TABLE = 'schedule_data';
 
-let editMode=false, subs=[], schedule={}, constraints={}, varData={}, weekOff=1, openCell=null, openVarDay=null, currentUser=null;
+let editMode=false, subs=[], schedule={}, constraints={}, varData={}, weekOff=0, openCell=null, openVarDay=null, currentUser=null;
 let selectedWorker=null, requests=[], calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
 let syncStatus='';
 let autoSaveTimer=null;
@@ -590,12 +590,12 @@ function getWorkerVarStatus(di,wid){const e=getVarDay(di).find(x=>x.wid===wid);r
 function isBlocked(wid,sid,di){return((constraints[ck(wid)]||{})[`${sid}_${di}`]||'ok')==='blocked';}
 function getWeekStart(off){
   const d=new Date();
-  const dayOfWeek=d.getDay(); // 0=ראשון, 1=שני, ..., 6=שבת
-  const daysToSubtract=dayOfWeek; // כמה ימים אחורה עד ראשון
-  const s=new Date(d);
-  s.setDate(d.getDate()-daysToSubtract+off*7);
-  s.setHours(0,0,0,0);
-  return s;
+  const dayOfWeek=d.getDay();
+  const msPerDay=24*60*60*1000;
+  const daysToSubtract=dayOfWeek; // רחוק עד ראשון
+  const weekStart=new Date(d.getTime()-daysToSubtract*msPerDay+off*7*msPerDay);
+  weekStart.setHours(0,0,0,0);
+  return weekStart;
 }
 function fmtWeek(s){const e=new Date(s);e.setDate(e.getDate()+6);const f=d=>d.toLocaleDateString('he-IL',{day:'numeric',month:'numeric'});return f(s)+' — '+f(e);}
 function chgWk(d){weekOff+=d;openCell=null;openVarDay=null;render();}
