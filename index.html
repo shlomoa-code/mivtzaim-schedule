@@ -275,6 +275,10 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
         </div>
         <div id="my-pills-area"></div>
         <button class="btn btn-submit" style="margin-top:1rem;width:100%;justify-content:center" onclick="saveMyConstraints()"><i class="ti ti-send"></i>שלח למנהל</button>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:1rem;padding:0.75rem;background:var(--surface-0);border-radius:8px;border:0.5px solid var(--border)">
+          <strong>🔧 כדי לשנות את האילוצים, לחץ על המשמרות הבאות:</strong>
+          <div id="my-pills-area-selector" style="margin-top:0.5rem"></div>
+        </div>
       </div>
       <div id="my-constraints-status"></div>
     </div>
@@ -356,7 +360,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v2'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v3'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=sessionStorage.getItem('app_version');
@@ -811,7 +815,10 @@ function renderMyConstraintsTab(){
   const sel=document.getElementById('constraint-worker-sel');
   sel.innerHTML=WORKERS.map(w=>`<button class="wsel-btn${constraintWorker===w.id?' active-'+w.id:''}" onclick="selectConstraintWorker('${w.id}')">${w.name}</button>`).join('');
   document.getElementById('my-constraints-area').style.display=constraintWorker?'block':'none';
-  if(constraintWorker) renderMyPills();
+  if(constraintWorker){
+    renderMyPills();
+    renderMyConstraintsPills();
+  }
   renderAllConstraintsBoard();
 }
 function renderAllConstraintsBoard(){
@@ -837,13 +844,43 @@ function selectConstraintWorker(wid){constraintWorker=wid;renderMyConstraintsTab
 function renderMyPills(){
   const el=document.getElementById('my-pills-area');
   const c=constraints[ck(constraintWorker)]||{};
+  let html='<div style="display:flex;flex-direction:column;gap:0.5rem">';
+  const blocked=[], comp=[];
+  SHIFTS.forEach(shift=>{
+    shift.days.forEach(di=>{
+      const ck2=`${shift.id}_${di}`;
+      const st=c[ck2]||'ok';
+      const dayName=DAYS[di].label;
+      const shiftName=shift.id==='morning'?'בוקר':shift.id==='evening'?'ערב':shift.id==='fri'?'שישי':'שבת';
+      if(st==='blocked'){
+        blocked.push(`${dayName} - ${shiftName}`);
+      }else if(st==='comp'){
+        comp.push(`${dayName} - ${shiftName}`);
+      }
+    });
+  });
+  if(blocked.length>0){
+    html+=`<div style="background:#FCEBEB;border:0.5px solid #F09595;border-radius:8px;padding:0.75rem;font-size:13px;color:#A32D2D"><strong>❌ לא יכול לעבוד:</strong><br/>${blocked.join('<br/>')}</div>`;
+  }
+  if(comp.length>0){
+    html+=`<div style="background:#E8F5FF;border:0.5px solid #6DB3F2;border-radius:8px;padding:0.75rem;font-size:13px;color:#0B4CB8"><strong>🔄 חופש תמורא:</strong><br/>${comp.join('<br/>')}</div>`;
+  }
+  if(blocked.length===0 && comp.length===0){
+    html+=`<div style="background:#E1F5EE;border:0.5px solid #5DCAA5;border-radius:8px;padding:0.75rem;font-size:13px;color:#085041"><strong>✓ זמין לכל המשמרות השבוע</strong></div>`;
+  }
+  html+='<div style="margin-top:1rem;font-size:12px;color:var(--text-muted);padding:0.5rem;background:var(--surface-0);border-radius:8px">💡 לחץ על משמרת בתחתית לשינוי</div></div>';
+  el.innerHTML=html;
+}
+function renderMyConstraintsPills(){
+  const el=document.getElementById('my-pills-area-selector');
+  const c=constraints[ck(constraintWorker)]||{};
   let html='<div class="pills">';
   SHIFTS.forEach(shift=>{
     shift.days.forEach(di=>{
       const ck2=`${shift.id}_${di}`;
       const st=c[ck2]||'ok';
       const lbl=`${DAYS[di].sh} ${shift.id==='morning'?'בוקר':shift.id==='evening'?'ערב':shift.id==='fri'?'שישי':'שבת'}`;
-      html+=`<span class="pill ${st}" onclick="toggleMyConstraint('${ck2}')">${lbl}</span>`;
+      html+=`<span class="pill ${st}" onclick="toggleMyConstraint('${ck2}')" title="לחץ לשינוי">${lbl}</span>`;
     });
   });
   html+='</div>';
@@ -856,6 +893,7 @@ function toggleMyConstraint(ck2){
   // מחזור: ok -> blocked -> comp (חופש תמורה) -> ok
   constraints[k][ck2]=cur==='ok'?'blocked':(cur==='blocked'?'comp':'ok');
   renderMyPills();
+  renderMyConstraintsPills();
   renderAllConstraintsBoard();
   scheduleAutoSave();
   const el=document.getElementById('my-constraints-status');
