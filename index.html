@@ -103,6 +103,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 .pill{padding:5px 10px;border-radius:10px;font-size:12px;cursor:pointer;border:0.5px solid var(--border);background:var(--surface-0);color:var(--text-secondary);user-select:none;transition:all .1s}
 .pill.blocked{background:#FCEBEB;color:#A32D2D;border-color:#F09595}
 .pill.ok{background:#E1F5EE;color:#085041;border-color:#5DCAA5}
+.pill.comp{background:#E8F5FF;color:#0B4CB8;border-color:#6DB3F2}
 .sub-row{display:flex;gap:6px;margin-top:.75rem}
 .tinput{padding:7px 12px;border:0.5px solid var(--border-strong);border-radius:var(--radius);font-size:14px;background:var(--surface-0);color:var(--text-primary);flex:1}
 .sub-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
@@ -185,7 +186,6 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
     <div style="font-size:14px;margin-bottom:2rem;color:#ffffffcc">הכנס את האימייל שלך כדי להתחבר</div>
     <input id="login-input" type="email" placeholder="example@kan.org.il" style="width:280px;padding:12px;border:none;border-radius:8px;font-size:14px;text-align:center;margin-bottom:1rem;font-family:inherit" />
     <button class="btn" onclick="login()" style="width:280px;background:#fff;color:#E24B4A;border:none;padding:12px;font-weight:700;border-radius:8px;cursor:pointer;font-size:14px">כנס</button>
-    <div style="font-size:11px;color:#ffffffaa;margin-top:1.5rem">אמיר: amir@kan.org.il<br/>תוג'אן: toujan@kan.org.il<br/>גל: gal@kan.org.il<br/>מנהל: shlomoa@kan.org.il</div>
   </div>
 </div>
 
@@ -267,7 +267,12 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
     <div id="my-constraints-area" style="display:none">
       <div style="background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1rem">
         <div class="panel-title" style="margin-bottom:.5rem">סמן משמרות שאתה לא יכול</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:.75rem">לחץ על משמרת — אדום = לא יכול, ירוק = יכול:</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:.75rem">לחץ על משמרת: ירוק = יכול, אדום = לא יכול, כחול = חופש תמורה (שבת):</div>
+        <div style="display:flex;gap:1rem;margin-bottom:1rem;font-size:11px">
+          <div style="display:flex;align-items:center;gap:4px"><span class="pill ok" style="min-width:40px">יכול</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><span class="pill blocked" style="min-width:40px">לא יכול</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><span class="pill comp" style="min-width:40px">חופש תמורה</span></div>
+        </div>
         <div id="my-pills-area"></div>
         <button class="btn btn-submit" style="margin-top:1rem;width:100%;justify-content:center" onclick="saveMyConstraints()"><i class="ti ti-send"></i>שלח למנהל</button>
       </div>
@@ -275,7 +280,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
     </div>
     <div style="background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:1rem;margin-top:1rem">
       <div class="panel-title" style="margin-bottom:.5rem"><i class="ti ti-users"></i>האילוצים של כולם</div>
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:.75rem">לצפייה בלבד — כל אחד יכול לראות מה כולם רשמו. אדום = לא יכול, ירוק = יכול.</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:.75rem">לצפייה בלבד — כל אחד יכול לראות מה כולם רשמו. ירוק = יכול, אדום = לא יכול, כחול = חופש תמורה.</div>
       <div id="all-constraints-board"></div>
     </div>
   </div>
@@ -353,9 +358,9 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script>
 // ── CONFIG ──
 const WORKERS=[
-  {id:'amir',  name:'אמיר',   email:'amir@kan.org.il',   acls:'a-amir',  avcls:'av-amir',  dot:'#378ADD',init:'אמ',calCls:'vt-amir'},
-  {id:'toujan',name:"תוג'אן", email:'toujan@kan.org.il', acls:'a-toujan',avcls:'av-toujan',dot:'#EF9F27',init:'תו',calCls:'vt-toujan'},
-  {id:'gal',   name:'גל',     email:'gal@kan.org.il',    acls:'a-gal',   avcls:'av-gal',   dot:'#1D9E75',init:'גל',calCls:'vt-gal'}
+  {id:'amir',  name:'אמיר',   email:'amirbe@kan.org.il',  acls:'a-amir',  avcls:'av-amir',  dot:'#378ADD',init:'אמ',calCls:'vt-amir'},
+  {id:'toujan',name:"תוג'אן", email:'tojanma@kan.org.il', acls:'a-toujan',avcls:'av-toujan',dot:'#EF9F27',init:'תו',calCls:'vt-toujan'},
+  {id:'gal',   name:'גל',     email:'galv@kan.org.il',    acls:'a-gal',   avcls:'av-gal',   dot:'#1D9E75',init:'גל',calCls:'vt-gal'}
 ];
 const DAYS=[
   {sh:"א'",label:'ראשון'},{sh:"ב'",label:'שני'},{sh:"ג'",label:'שלישי'},
@@ -837,7 +842,8 @@ function toggleMyConstraint(ck2){
   const k=ck(constraintWorker);
   if(!constraints[k])constraints[k]={};
   const cur=constraints[k][ck2]||'ok';
-  constraints[k][ck2]=cur==='ok'?'blocked':'ok';
+  // מחזור: ok -> blocked -> comp (חופש תמורה) -> ok
+  constraints[k][ck2]=cur==='ok'?'blocked':(cur==='blocked'?'comp':'ok');
   renderMyPills();
   renderAllConstraintsBoard();
   scheduleAutoSave();
