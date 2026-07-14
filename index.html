@@ -356,7 +356,18 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-// ── CONFIG ──
+const APP_VERSION='2024-01-14-v2'; // משתנה בכל עדכון
+// בדוק אם יש קובץ חדש יותר
+window.addEventListener('load',()=>{
+  const stored=sessionStorage.getItem('app_version');
+  if(stored && stored!==APP_VERSION){
+    // גרסה חדשה - טעון מחדש
+    sessionStorage.setItem('app_version',APP_VERSION);
+    window.location.reload(true);
+  }else if(!stored){
+    sessionStorage.setItem('app_version',APP_VERSION);
+  }
+});
 const WORKERS=[
   {id:'amir',  name:'אמיר',   email:'amirbe@kan.org.il',  acls:'a-amir',  avcls:'av-amir',  dot:'#378ADD',init:'אמ',calCls:'vt-amir'},
   {id:'toujan',name:"תוג'אן", email:'tojanma@kan.org.il', acls:'a-toujan',avcls:'av-toujan',dot:'#EF9F27',init:'תו',calCls:'vt-toujan'},
