@@ -431,7 +431,7 @@ let autoSaveTimer=null;
 // ── INIT ──
 // ── LOGIN ──
 function checkLogin(){
-  const stored=localStorage.getItem('mivtzaim_user');
+  const stored=sessionStorage.getItem('mivtzaim_user');
   if(stored){
     currentUser=stored;
     showApp();
@@ -443,14 +443,14 @@ function login(){
   const input=document.getElementById('login-input').value.toLowerCase().trim();
   if(input==='shlomoa@kan.org.il'){
     currentUser='manager';
-    localStorage.setItem('mivtzaim_user','manager');
+    sessionStorage.setItem('mivtzaim_user','manager');
     showApp();
     return;
   }
   const w=WORKERS.find(x=>x.email.toLowerCase()===input);
   if(w){
     currentUser=w.id;
-    localStorage.setItem('mivtzaim_user',w.id);
+    sessionStorage.setItem('mivtzaim_user',w.id);
     showApp();
   }else{
     showToast('❌ קוד כניסה לא נכון');
@@ -458,7 +458,7 @@ function login(){
 }
 function logout(){
   currentUser=null;
-  localStorage.removeItem('mivtzaim_user');
+  sessionStorage.removeItem('mivtzaim_user');
   document.getElementById('login-input').value='';
   showLoginScreen();
 }
