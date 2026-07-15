@@ -360,16 +360,16 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v3'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v4'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
-  const stored=sessionStorage.getItem('app_version');
+  const stored=localStorage.getItem('app_version');
   if(stored && stored!==APP_VERSION){
     // גרסה חדשה - טעון מחדש
-    sessionStorage.setItem('app_version',APP_VERSION);
+    localStorage.setItem('app_version',APP_VERSION);
     window.location.reload(true);
   }else if(!stored){
-    sessionStorage.setItem('app_version',APP_VERSION);
+    localStorage.setItem('app_version',APP_VERSION);
   }
 });
 const WORKERS=[
@@ -446,7 +446,7 @@ let autoSaveTimer=null;
 // ── INIT ──
 // ── LOGIN ──
 function checkLogin(){
-  const stored=sessionStorage.getItem('mivtzaim_user');
+  const stored=localStorage.getItem('mivtzaim_user');
   if(stored){
     currentUser=stored;
     showApp();
@@ -458,14 +458,14 @@ function login(){
   const input=document.getElementById('login-input').value.toLowerCase().trim();
   if(input==='shlomoa@kan.org.il'){
     currentUser='manager';
-    sessionStorage.setItem('mivtzaim_user','manager');
+    localStorage.setItem('mivtzaim_user','manager');
     showApp();
     return;
   }
   const w=WORKERS.find(x=>x.email.toLowerCase()===input);
   if(w){
     currentUser=w.id;
-    sessionStorage.setItem('mivtzaim_user',w.id);
+    localStorage.setItem('mivtzaim_user',w.id);
     showApp();
   }else{
     showToast('❌ קוד כניסה לא נכון');
@@ -473,7 +473,7 @@ function login(){
 }
 function logout(){
   currentUser=null;
-  sessionStorage.removeItem('mivtzaim_user');
+  localStorage.removeItem('mivtzaim_user');
   document.getElementById('login-input').value='';
   showLoginScreen();
 }
