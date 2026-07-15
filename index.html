@@ -360,7 +360,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v4'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v5'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -724,10 +724,71 @@ function renderGrid(){
 function toggleVarDay(di){if(openVarDay===di){openVarDay=null;document.getElementById('cell-popup').innerHTML='';render();return;}openCell=null;openVarDay=di;render();}
 function renderVarPopup(){const di=openVarDay;const day=DAYS[di];let html=`<div class="var-popup"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem"><span style="font-size:13px;font-weight:600">${day.label} — משתנה</span><button class="btn btn-sm" onclick="openVarDay=null;document.getElementById('cell-popup').innerHTML='';render()">סגור</button></div>`;WORKERS.forEach(w=>{const cur=getWorkerVarStatus(di,w.id);html+=`<div class="vw-row"><span class="vw-name"><span class="dot" style="background:${w.dot}"></span>${w.name}</span><div class="vw-btns"><button class="vw-btn cam ${cur==='cam'?'active':''}" onclick="setVarWorker(${di},'${w.id}','cam');render()">צלם</button><button class="vw-btn field ${cur==='field'?'active':''}" onclick="setVarWorker(${di},'${w.id}','field');render()">שטח</button><button class="vw-btn off ${cur==='off'?'active':''}" onclick="setVarWorker(${di},'${w.id}','off');render()">לא יוצא</button></div></div>`;});html+=`</div>`;document.getElementById('cell-popup').innerHTML=html;}
 function togglePopup(sid,di,k){if(openCell&&openCell.k===k){openCell=null;document.getElementById('cell-popup').innerHTML='';render();return;}openVarDay=null;openCell={sid,di,k};render();}
-function renderPopup(){if(!openCell)return;const{sid,di,k}=openCell;const shift=SHIFTS.find(s=>s.id===sid),day=DAYS[di];const allW=[...WORKERS,...subs.map(s=>({id:s,name:s,acls:'a-sub',dot:'#888'}))];const avail=[],blocked=[];allW.forEach(w=>{const isW=!!WORKERS.find(x=>x.id===w.id);if(isW&&isBlocked(w.id,sid,di))blocked.push(w);else avail.push(w);});let html=`<div class="popup-box"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span class="pop-title" style="margin:0">${day.label} — ${shift.label}</span><button class="btn btn-sm" onclick="openCell=null;document.getElementById('cell-popup').innerHTML='';render()">סגור</button></div>`;avail.forEach(w=>{html+=`<button class="pop-opt" onclick="doAssign('${k}','${w.id}')"><span class="dot" style="background:${w.dot||'#888'}"></span>${w.name}</button>`;});if(blocked.length){html+=`<div style="font-size:11px;color:#A32D2D;margin:5px 0 2px">חסומים — שיבוץ בכוח</div>`;blocked.forEach(w=>{html+=`<button class="pop-opt blocked" onclick="doAssign('${k}','${w.id}')"><span class="dot" style="background:#E24B4A"></span>${w.name}</button>`;});}html+=`</div>`;document.getElementById('cell-popup').innerHTML=html;}
+function renderPopup(){
+  if(!openCell)return;
+  const{sid,di,k}=openCell;
+  const shift=SHIFTS.find(s=>s.id===sid),day=DAYS[di];
+  const weekStart=getWeekStart(weekOff);
+  const currentDate=new Date(weekStart);
+  currentDate.setDate(currentDate.getDate()+di);
+  const currentDateStr=dateStr(currentDate);
+  const allW=[...WORKERS,...subs.map(s=>({id:s,name:s,acls:'a-sub',dot:'#888'}))];
+  const avail=[],blocked=[],onVac=[];
+  allW.forEach(w=>{
+    const isW=!!WORKERS.find(x=>x.id===w.id);
+    const hasVac=requests.some(r=>r.wid===w.id&&r.status==='approved'&&currentDateStr>=r.from&&currentDateStr<=r.to);
+    if(hasVac){
+      onVac.push(w);
+    }else if(isW&&isBlocked(w.id,sid,di)){
+      blocked.push(w);
+    }else{
+      avail.push(w);
+    }
+  });
+  let html=`<div class="popup-box"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span class="pop-title" style="margin:0">${day.label} — ${shift.label}</span><button class="btn btn-sm" onclick="openCell=null;document.getElementById('cell-popup').innerHTML='';render()">סגור</button></div>`;
+  avail.forEach(w=>{html+=`<button class="pop-opt" onclick="doAssign('${k}','${w.id}')"><span class="dot" style="background:${w.dot||'#888'}"></span>${w.name}</button>`;});
+  if(blocked.length){
+    html+=`<div style="font-size:11px;color:#A32D2D;margin:5px 0 2px">חסומים — שיבוץ בכוח</div>`;
+    blocked.forEach(w=>{html+=`<button class="pop-opt blocked" onclick="doAssign('${k}','${w.id}')"><span class="dot" style="background:#E24B4A"></span>${w.name}</button>`;});
+  }
+  if(onVac.length){
+    html+=`<div style="font-size:11px;color:#0B4CB8;margin:5px 0 2px">בחופש מאושר — לא ניתן לשבץ</div>`;
+    onVac.forEach(w=>{html+=`<button class="pop-opt" disabled style="opacity:0.5;cursor:not-allowed"><span class="dot" style="background:#6DB3F2"></span>${w.name}</button>`;});
+  }
+  html+=`</div>`;
+  document.getElementById('cell-popup').innerHTML=html;
+}
 function doAssign(k,wid){schedule[k]=wid;openCell=null;document.getElementById('cell-popup').innerHTML='';scheduleAutoSave();render();}
 function rem(k){delete schedule[k];openCell=null;document.getElementById('cell-popup').innerHTML='';scheduleAutoSave();render();}
-function autoFill(){const allW=[...WORKERS,...subs.map(s=>({id:s}))];const cnt={};allW.forEach(w=>cnt[w.id]=workerCount(w.id));SHIFTS.forEach(shift=>{shift.days.forEach(di=>{const k=sk(shift.id,di);if(schedule[k])return;const cands=allW.filter(w=>{if(isBlocked(w.id,shift.id,di))return false;if(WORKERS.find(x=>x.id===w.id)&&cnt[w.id]>=5)return false;return true;}).sort((a,b)=>cnt[a.id]-cnt[b.id]);if(cands[0]){schedule[k]=cands[0].id;cnt[cands[0].id]++;}});});openCell=null;scheduleAutoSave();render();}
+function autoFill(){
+  const allW=[...WORKERS,...subs.map(s=>({id:s}))];
+  const cnt={};
+  allW.forEach(w=>cnt[w.id]=workerCount(w.id));
+  const weekStart=getWeekStart(weekOff);
+  SHIFTS.forEach(shift=>{
+    shift.days.forEach(di=>{
+      const k=sk(shift.id,di);
+      if(schedule[k])return;
+      const currentDate=new Date(weekStart);
+      currentDate.setDate(currentDate.getDate()+di);
+      const currentDateStr=dateStr(currentDate);
+      const cands=allW.filter(w=>{
+        if(isBlocked(w.id,shift.id,di))return false;
+        const hasVac=requests.some(r=>r.wid===w.id&&r.status==='approved'&&currentDateStr>=r.from&&currentDateStr<=r.to);
+        if(hasVac)return false;
+        if(WORKERS.find(x=>x.id===w.id)&&cnt[w.id]>=5)return false;
+        return true;
+      }).sort((a,b)=>cnt[a.id]-cnt[b.id]);
+      if(cands[0]){
+        schedule[k]=cands[0].id;
+        cnt[cands[0].id]++;
+      }
+    });
+  });
+  openCell=null;
+  scheduleAutoSave();
+  render();
+}
 function clearAll(){SHIFTS.forEach(s=>s.days.forEach(di=>{delete schedule[sk(s.id,di)];}));openCell=null;scheduleAutoSave();render();}
 function renderConstraints(){const el=document.getElementById('constraint-editor');let html='';WORKERS.forEach(w=>{const c=constraints[ck(w.id)]||{};html+=`<div class="crow"><div class="avatar ${w.avcls}">${w.init}</div><div style="flex:1"><div style="font-size:12px;font-weight:600;margin-bottom:5px">${w.name}</div><div class="pills">`;SHIFTS.forEach(shift=>{shift.days.forEach(di=>{const ck2=`${shift.id}_${di}`;const st=c[ck2]||'ok';const lbl=`${DAYS[di].sh} ${shift.id==='morning'?'בוקר':shift.id==='evening'?'ערב':shift.id==='fri'?'שישי':'שבת'}`;html+=`<span class="pill ${st}" onclick="toggleC('${w.id}','${ck2}')">${lbl}</span>`;});});html+=`</div><div style="font-size:10px;color:var(--text-muted);margin-top:4px">לחץ לסימון/ביטול חסימה</div></div></div>`;});el.innerHTML=html;}
 function toggleC(wid,ck2){const k=ck(wid);if(!constraints[k])constraints[k]={};const cur=constraints[k][ck2]||'ok';constraints[k][ck2]=cur==='ok'?'blocked':'ok';scheduleAutoSave();render();}
@@ -965,6 +1026,15 @@ async function takeScreenshot(){
 }
 
 function showToast(msg){let t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1A1A1A;color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;z-index:9999;opacity:0;transition:opacity .25s;direction:rtl';document.body.appendChild(t);}t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity='0',3000);}
+
+// ── SERVICE WORKER REGISTRATION ──
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js', { scope: './' }).then(reg => {
+    console.log('✓ Service Worker registered');
+    // בדוק כל 60 שניות לעדכונים
+    setInterval(() => reg.update(), 60000);
+  }).catch(err => console.log('Service Worker error:', err));
+}
 
 // ── START ──
 emailjs.init(EJS_PUBLIC_KEY);
