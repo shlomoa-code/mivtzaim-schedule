@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v17'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v18'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -853,30 +853,25 @@ function renderPopup(){
   html+=`</div>`;
   document.getElementById('cell-popup').innerHTML=html;
 }
-async function doAssign(k,wid){
-  console.log('🔴 doAssign קרא עם:', k, wid);
-  if(!schedule) schedule={};
-  schedule[k]=wid;
-  console.log('✓ schedule עודכן:', schedule);
+function doAssign(k,wid){
+  console.log('ASSIGN:', k, '=', wid);
+  schedule[k] = wid;
+  // שמור מיד לlocalStorage
+  localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests}));
+  console.log('SAVED to localStorage');
   openCell=null;
   document.getElementById('cell-popup').innerHTML='';
   render();
-  // שמור מיד ותחכה להסתיים!
-  console.log('💾 קוראים ל-saveToServer מ-doAssign');
-  await saveToServer();
-  console.log('✓ saveToServer הסתיים!');
 }
-async function rem(k){
-  console.log('🔴 rem קרא עם:', k);
+function rem(k){
+  console.log('REMOVE:', k);
   delete schedule[k];
-  console.log('✓ schedule עודכן:', schedule);
+  // שמור מיד לlocalStorage
+  localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests}));
+  console.log('SAVED to localStorage');
   openCell=null;
   document.getElementById('cell-popup').innerHTML='';
   render();
-  // שמור מיד ותחכה להסתיים!
-  console.log('💾 קוראים ל-saveToServer מ-rem');
-  await saveToServer();
-  console.log('✓ saveToServer הסתיים!');
 }
 function autoFill(){
   const allW=[...WORKERS,...subs.map(s=>({id:s}))];

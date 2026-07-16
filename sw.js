@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mivtzaim-2024-01-14-v17';
+const CACHE_VERSION = 'mivtzaim-2024-01-14-v18';
 const urlsToCache = ['/', '/index.html'];
 
 self.addEventListener('install', event => {
