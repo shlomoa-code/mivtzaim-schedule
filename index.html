@@ -203,6 +203,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
   <div class="tabs">
     <button class="tab active" onclick="swTab('schedule',this)"><i class="ti ti-calendar-week"></i>סידור שבועי</button>
     <button class="tab" onclick="swTab('myconstraints',this)"><i class="ti ti-adjustments"></i>האילוצים שלי</button>
+    <button class="tab" onclick="swTab('constraints-weekly',this)"><i class="ti ti-table"></i>אילוצים שבועיים</button>
     <button class="tab" onclick="swTab('requests',this)"><i class="ti ti-beach"></i>בקשת חופש</button>
     <button class="tab" onclick="swTab('manager',this)" id="mgr-tab"><i class="ti ti-clipboard-check"></i>אישור מנהל <span class="badge-count" id="pending-badge" style="display:none">0</span></button>
     <button class="tab" onclick="swTab('calendar',this)"><i class="ti ti-calendar-month"></i>לוח חופשות</button>
@@ -230,7 +231,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
       <svg class="topbar-logo" viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg"><rect width="560" height="560" fill="#E24B4A" rx="80"/><text x="280" y="260" text-anchor="middle" font-size="100" font-weight="700" fill="#FFFFFF" font-family="Arial, sans-serif">מבצעים</text><g transform="translate(280, 420)"><circle cx="0" cy="0" r="32" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="20" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="8" fill="#FFFFFF"/></g></svg>
     </div>
     <div class="stats-row" id="stats-row"></div>
-    <div id="warn-area"></div>
+    <div id="warn-area" style="margin-bottom:1rem"></div>
     <div class="grid-wrap" id="main-grid"></div>
     <div id="cell-popup"></div>
     <div class="legend">
@@ -330,6 +331,18 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
     <div id="history-list"></div>
   </div>
 
+  <!-- WEEKLY CONSTRAINTS TABLE -->
+  <div id="tab-constraints-weekly" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div class="page-title" style="margin-bottom:0"><i class="ti ti-table"></i>אילוצים שבועיים</div>
+      <svg class="topbar-logo" viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg"><rect width="560" height="560" fill="#E24B4A" rx="80"/><text x="280" y="260" text-anchor="middle" font-size="100" font-weight="700" fill="#FFFFFF" font-family="Arial, sans-serif">מבצעים</text><g transform="translate(280, 420)"><circle cx="0" cy="0" r="32" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="20" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="8" fill="#FFFFFF"/></g></svg>
+    </div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:1rem;padding:0.75rem;background:var(--surface-0);border-radius:8px;border:0.5px solid var(--border)">
+      💡 כל שורה = עובד | כל עמודה = משמרת בשבוע | <span style="display:inline-block;width:12px;height:12px;background:#E1F5EE;border-radius:2px;margin:0 4px;vertical-align:middle"></span> יכול | <span style="display:inline-block;width:12px;height:12px;background:#FCEBEB;border-radius:2px;margin:0 4px;vertical-align:middle"></span> לא יכול | <span style="display:inline-block;width:12px;height:12px;background:#E8F5FF;border-radius:2px;margin:0 4px;vertical-align:middle"></span> חופש תמורה
+    </div>
+    <div id="constraints-table-area" style="overflow-x:auto"></div>
+  </div>
+
   <!-- CALENDAR -->
   <div id="tab-calendar" style="display:none">
     <div class="cal-top">
@@ -360,7 +373,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v5'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v7'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -647,10 +660,13 @@ function updatePendingBadge(){const n=pendingCount();const b=document.getElement
 function swTab(tab,el){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
-  ['schedule','myconstraints','requests','manager','calendar'].forEach(t=>{document.getElementById('tab-'+t).style.display=t===tab?'block':'none';});
+  ['schedule','myconstraints','constraints-weekly','requests','manager','calendar'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===tab?'block':'none';
+  });
   if(tab==='requests')renderRequestsTab();
   if(tab==='manager')renderManagerTab();
   if(tab==='myconstraints')renderMyConstraintsTab();
+  if(tab==='constraints-weekly')renderConstraintsWeekly();
   if(tab==='calendar')renderCalendar();
   if(tab==='schedule'){openCell=null;openVarDay=null;render();}
 }
@@ -688,7 +704,22 @@ function renderStats(){
   SHIFTS.forEach(s=>s.days.forEach(di=>{if(schedule[sk(s.id,di)])regularTotal++;}));
   document.getElementById('stats-row').innerHTML=counts.map(c=>`<div class="stat"><div class="stat-lbl">${c.name}</div><div class="stat-val ${c.n===5?'ok':c.n>5?'err':'warn'}">${c.n}/5</div></div>`).join('')+`<div class="stat"><div class="stat-lbl">סה"כ</div><div class="stat-val">${regularTotal}/12</div></div>`;
 }
-function renderWarn(){const ws=WORKERS.filter(w=>workerCount(w.id)!==5).map(w=>`${w.name}: ${workerCount(w.id)}/5`);document.getElementById('warn-area').innerHTML=ws.length?`<div class="warn-bar"><i class="ti ti-alert-triangle"></i>${ws.join(' | ')}</div>`:'';}
+function renderWarn(){
+  const weekStart=getWeekStart(weekOff);
+  const weekEnd=new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate()+6);
+  const weekVacs=requests.filter(r=>r.status==='approved'&&r.to>=dateStr(weekStart)&&r.from<=dateStr(weekEnd));
+  const vacHTML=weekVacs.map(v=>{
+    const w=WORKERS.find(x=>x.id===v.wid);
+    const isComp=v.req_type==='comp';
+    return `<div style="background:${isComp?'#E8F5FF':'#FFF3CD'};border:0.5px solid ${isComp?'#6DB3F2':'#F0AD4E'};border-radius:6px;padding:0.5rem;font-size:12px;margin-bottom:6px">
+      <strong>${w?.name||v.wid}</strong> ${isComp?'🔄 חופש תמורה':'📅 חופש'}: ${v.from} עד ${v.to}
+    </div>`;
+  }).join('');
+  const ws=WORKERS.filter(w=>workerCount(w.id)!==5).map(w=>`${w.name}: ${workerCount(w.id)}/5`);
+  const shiftHTML=ws.length?`<div class="warn-bar"><i class="ti ti-alert-triangle"></i>${ws.join(' | ')}</div>`:'';
+  document.getElementById('warn-area').innerHTML=vacHTML+shiftHTML;
+}
 function renderGrid(){
   const weekStart=getWeekStart(weekOff);const g=document.getElementById('main-grid');
   let html=`<div class="g-head"><div class="ghc" style="border-left:none">משמרת</div>${DAYS.map(d=>`<div class="ghc">${d.sh}</div>`).join('')}</div>`;
@@ -844,6 +875,43 @@ async function decideRequest(id,status){
   const w=WORKERS.find(x=>x.id===r.wid);
   showToast(status==='approved'?`✓ חופש ${w.name} אושר — מייל נשלח`:`✕ בקשת ${w.name} נדחתה — מייל נשלח`);
   setSyncStatus('synced');renderManagerTab();updatePendingBadge();renderCalendar();
+}
+
+// ── WEEKLY CONSTRAINTS TABLE ──
+function renderConstraintsWeekly(){
+  const el=document.getElementById('constraints-table-area');
+  const weekStart=getWeekStart(weekOff);
+  let html='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="border:0.5px solid #ddd;padding:6px;background:#f5f5f5;text-align:right;width:80px">עובד</th>';
+  
+  SHIFTS.forEach(shift=>{
+    shift.days.forEach(di=>{
+      const day=DAYS[di].sh;
+      const shiftLabel=shift.id==='morning'?'בוקר':shift.id==='evening'?'ערב':shift.id==='fri'?'שישי':'שבת';
+      html+=`<th style="border:0.5px solid #ddd;padding:6px;background:#f5f5f5;text-align:center;width:50px;font-size:11px">${day}<br/>${shiftLabel}</th>`;
+    });
+  });
+  
+  html+='</tr></thead><tbody>';
+  
+  WORKERS.forEach(w=>{
+    html+=`<tr><td style="border:0.5px solid #ddd;padding:6px;background:var(--surface-0);font-weight:600;text-align:right">${w.name}</td>`;
+    const c=constraints[ck(w.id)]||{};
+    SHIFTS.forEach(shift=>{
+      shift.days.forEach(di=>{
+        const ck2=`${shift.id}_${di}`;
+        const st=c[ck2]||'ok';
+        let bgColor='#E1F5EE';
+        if(st==='blocked')bgColor='#FCEBEB';
+        else if(st==='comp')bgColor='#E8F5FF';
+        const symbol=st==='blocked'?'❌':st==='comp'?'🔄':'✓';
+        html+=`<td style="border:0.5px solid #ddd;padding:6px;background:${bgColor};text-align:center;font-size:14px">${symbol}</td>`;
+      });
+    });
+    html+='</tr>';
+  });
+  
+  html+='</tbody></table>';
+  el.innerHTML=html;
 }
 
 // ── CALENDAR ──
