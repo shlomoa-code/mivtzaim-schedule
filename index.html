@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v18'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v20'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -552,35 +552,52 @@ async function supaFetch(method, body) {
 async function loadFromServer() {
   setSyncStatus('syncing');
   
-  // תמיד טעון מהלוקאלי קודם
-  loadLocal();
-  console.log('📂 טען מלוקאלי');
+  // טעון מלוקאלי
+  const localData = (() => {
+    try {
+      const d = JSON.parse(localStorage.getItem('scheduleData')||'{}');
+      return d;
+    } catch(e) {
+      return {};
+    }
+  })();
   
-  // ואז נסה לטעון מSupa אם זה עדכני יותר
+  const localTimestamp = localData.timestamp || 0;
+  
   try {
     const rows = await supaFetch('GET');
     if (rows && rows.length > 0) {
       const d = rows[0];
-      const supaSchedule = d.schedule_json ? JSON.parse(d.schedule_json) : {};
-      const supaConstraints = d.constraints_json ? JSON.parse(d.constraints_json) : {};
-      const supaVarData = d.var_json ? JSON.parse(d.var_json) : {};
-      const supaSubs = d.subs_json ? JSON.parse(d.subs_json) : [];
-      const supaRequests = d.requests_json ? JSON.parse(d.requests_json) : [];
+      const supaTimestamp = d.last_updated || 0;
       
-      // עדכן רק אם יש נתונים בSupa
-      if (Object.keys(supaSchedule).length > 0) {
-        schedule = supaSchedule;
-        constraints = supaConstraints;
-        varData = supaVarData;
-        subs = supaSubs;
-        requests = supaRequests;
-        console.log('📂 עדכן מSupa...', Object.keys(schedule).length, 'שיבוצים');
+      console.log('⏰ Local:', new Date(localTimestamp).toLocaleTimeString('he-IL'));
+      console.log('⏰ Supa:', new Date(supaTimestamp).toLocaleTimeString('he-IL'));
+      
+      // השתמש בנתונים החדשים יותר (לפי timestamp)
+      if (supaTimestamp > localTimestamp) {
+        if (d.schedule_json) schedule = JSON.parse(d.schedule_json);
+        if (d.constraints_json) constraints = JSON.parse(d.constraints_json);
+        if (d.var_json) varData = JSON.parse(d.var_json);
+        if (d.subs_json) subs = JSON.parse(d.subs_json);
+        if (d.requests_json) requests = JSON.parse(d.requests_json);
+        console.log('✓ השתמש בSupabase (חדש יותר)');
+      } else {
+        if (localData.schedule) schedule = localData.schedule;
+        if (localData.constraints) constraints = localData.constraints;
+        if (localData.varData) varData = localData.varData;
+        if (localData.subs) subs = localData.subs;
+        if (localData.requests) requests = localData.requests;
+        console.log('✓ השתמש בLocal (חדש יותר)');
       }
     }
     setSyncStatus('synced');
   } catch(e) {
-    console.error('⚠️ לא הצליח טעינה מSupabase:', e.message);
-    console.log('✓ משתמש בנתונים מלוקאלי');
+    console.log('⚠️ Supabase לא זמינה, השתמשתי בLocal');
+    if (localData.schedule) schedule = localData.schedule;
+    if (localData.constraints) constraints = localData.constraints;
+    if (localData.varData) varData = localData.varData;
+    if (localData.subs) subs = localData.subs;
+    if (localData.requests) requests = localData.requests;
     setSyncStatus('synced');
   }
   
@@ -591,22 +608,24 @@ async function saveToServer() {
   setSyncStatus('syncing');
   saveLocal(); // תמיד שמור בלוקאלי קודם
   try {
+    const timestamp = Date.now();
     const data={
       id: 1,
       schedule_json: JSON.stringify(schedule),
       constraints_json: JSON.stringify(constraints),
       var_json: JSON.stringify(varData),
       subs_json: JSON.stringify(subs),
-      requests_json: JSON.stringify(requests)
+      requests_json: JSON.stringify(requests),
+      last_updated: timestamp
     };
-    console.log('💾 שומר לSupa...', Object.keys(schedule).length, 'שיבוצים');
+    console.log('💾 שומר לSupa at', new Date(timestamp).toLocaleTimeString('he-IL'));
     await supaFetch('POST', data);
     console.log('✓ נשמר בSupa בהצלחה');
     setSyncStatus('synced');
   } catch(e) {
     console.error('⚠️ לא הצליח לשמור לSupabase:', e.message);
     console.log('✓ אבל הנתונים שמורים בלוקאלי');
-    setSyncStatus('synced'); // הצג "סנכרון" כי הנתונים שמורים בלוקאלי
+    setSyncStatus('synced');
   }
 }
 
@@ -856,9 +875,16 @@ function renderPopup(){
 function doAssign(k,wid){
   console.log('ASSIGN:', k, '=', wid);
   schedule[k] = wid;
-  // שמור מיד לlocalStorage
-  localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests}));
-  console.log('SAVED to localStorage');
+  
+  const timestamp = Date.now();
+  
+  // שמור בלוקאלי עם timestamp
+  localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests,timestamp}));
+  console.log('SAVED to localStorage at', new Date(timestamp).toLocaleTimeString('he-IL'));
+  
+  // ושמור לSupabase עם timestamp
+  saveToServer();
+  
   openCell=null;
   document.getElementById('cell-popup').innerHTML='';
   render();
@@ -866,9 +892,16 @@ function doAssign(k,wid){
 function rem(k){
   console.log('REMOVE:', k);
   delete schedule[k];
-  // שמור מיד לlocalStorage
-  localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests}));
-  console.log('SAVED to localStorage');
+  
+  const timestamp = Date.now();
+  
+  // שמור בלוקאלי עם timestamp
+  localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests,timestamp}));
+  console.log('SAVED to localStorage at', new Date(timestamp).toLocaleTimeString('he-IL'));
+  
+  // ושמור לSupabase עם timestamp
+  saveToServer();
+  
   openCell=null;
   document.getElementById('cell-popup').innerHTML='';
   render();
