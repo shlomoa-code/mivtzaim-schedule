@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v23'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v24'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -594,12 +594,7 @@ function scheduleAutoSave() {
   autoSaveTimer = setTimeout(saveToServer, 800);
 }
 
-// ── AUTO REFRESH every 45 seconds (but NOT during editing) ──
-setInterval(()=>{
-  if(!editMode && currentUser) {
-    loadFromServer();
-  }
-}, 45000);
+// ── NO AUTO REFRESH - saves to localStorage immediately, Supabase is async ──
 
 function saveLocal() {
   try {
@@ -693,24 +688,21 @@ function swTab(tab,el){
 }
 
 // ── SCHEDULE ──
-async function toggleEdit(){
+function toggleEdit(){
   if(!editMode){
     const pw=prompt('סיסמת מנהל:');
     if(pw!=='4466') return;
+    editMode=true;
   }else{
-    // סוגרים עריכה - שמור תחילה לSupabase ותן לשמירה להסתיים!
-    console.log('💾 שומר לפני סגירת עריכה...');
-    try {
-      await saveToServer();
-      console.log('✓ נשמר בהצלחה, עכשיו סוגרים עריכה');
-    } catch(e) {
-      console.error('❌ שגיאה בשמירה:', e);
-      showToast('❌ שגיאה בשמירה! נסה שוב.');
-      return;
-    }
+    // סוגרים עריכה - שמור בלוקאלי + לSupabase
+    localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests}));
+    saveToServer(); // בעצמאות, אל תחכה
+    editMode=false;
   }
-  editMode=!editMode;
-  openCell=null;openVarDay=null;document.getElementById('cell-popup').innerHTML='';render();
+  openCell=null;
+  openVarDay=null;
+  document.getElementById('cell-popup').innerHTML='';
+  render();
 }
 function render(){
   document.getElementById('wlabel').textContent=fmtWeek(getWeekStart(weekOff));
