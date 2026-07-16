@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v9'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v10'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -731,7 +731,17 @@ function renderWarn(){
   const weekStart=getWeekStart(weekOff);
   const weekEnd=new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate()+6);
-  const weekVacs=requests.filter(r=>r.status==='approved'&&r.to>=dateStr(weekStart)&&r.from<=dateStr(weekEnd));
+  let weekVacs=requests.filter(r=>r.status==='approved'&&r.to>=dateStr(weekStart)&&r.from<=dateStr(weekEnd));
+  
+  // דדופליקציה - רק הבקשה האחרונה לכל worker
+  const seen=new Map();
+  weekVacs=weekVacs.reverse().filter(v=>{
+    const key=v.wid+':'+v.from+':'+v.to;
+    if(seen.has(key))return false;
+    seen.set(key,true);
+    return true;
+  }).reverse();
+  
   const vacHTML=weekVacs.map(v=>{
     const w=WORKERS.find(x=>x.id===v.wid);
     const isComp=v.req_type==='comp';
