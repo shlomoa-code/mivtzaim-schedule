@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v11'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v12'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -595,7 +595,7 @@ async function saveToServer() {
 
 function scheduleAutoSave() {
   clearTimeout(autoSaveTimer);
-  autoSaveTimer = setTimeout(saveToServer, 1500);
+  autoSaveTimer = setTimeout(saveToServer, 800);
 }
 
 // ── AUTO REFRESH every 45 seconds (but NOT during editing) ──
@@ -690,13 +690,21 @@ function swTab(tab,el){
 }
 
 // ── SCHEDULE ──
-function toggleEdit(){
+async function toggleEdit(){
   if(!editMode){
     const pw=prompt('סיסמת מנהל:');
     if(pw!=='4466') return;
   }else{
-    // סוגרים עריכה - שמור תחילה לSupabase!
-    saveToServer();
+    // סוגרים עריכה - שמור תחילה לSupabase ותן לשמירה להסתיים!
+    console.log('💾 שומר לפני סגירת עריכה...');
+    try {
+      await saveToServer();
+      console.log('✓ נשמר בהצלחה, עכשיו סוגרים עריכה');
+    } catch(e) {
+      console.error('❌ שגיאה בשמירה:', e);
+      showToast('❌ שגיאה בשמירה! נסה שוב.');
+      return;
+    }
   }
   editMode=!editMode;
   openCell=null;openVarDay=null;document.getElementById('cell-popup').innerHTML='';render();
@@ -821,8 +829,26 @@ function renderPopup(){
   html+=`</div>`;
   document.getElementById('cell-popup').innerHTML=html;
 }
-function doAssign(k,wid){schedule[k]=wid;openCell=null;document.getElementById('cell-popup').innerHTML='';scheduleAutoSave();render();}
-function rem(k){delete schedule[k];openCell=null;document.getElementById('cell-popup').innerHTML='';scheduleAutoSave();render();}
+function doAssign(k,wid){
+  schedule[k]=wid;
+  openCell=null;
+  document.getElementById('cell-popup').innerHTML='';
+  console.log('📌 שובץ:',wid,'לתא',k);
+  render();
+  // שמור תוך שנייה אחת
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(saveToServer, 1000);
+}
+function rem(k){
+  delete schedule[k];
+  openCell=null;
+  document.getElementById('cell-popup').innerHTML='';
+  console.log('❌ הסר מתא:',k);
+  render();
+  // שמור תוך שנייה אחת
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(saveToServer, 1000);
+}
 function autoFill(){
   const allW=[...WORKERS,...subs.map(s=>({id:s}))];
   const cnt={};
