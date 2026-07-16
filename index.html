@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v8'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v9'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -537,7 +537,7 @@ async function supaFetch(method, body) {
       'Authorization': `Bearer ${SUPA_SECRET}`,
       'Content-Type': 'application/json',
       'Cache-Control': 'no-cache',
-      'Prefer': method==='POST' ? 'resolution=merge-duplicates,return=minimal' : 'return=representation'
+      'Prefer': method==='POST' ? 'return=minimal' : 'return=representation'
     },
     body: body ? JSON.stringify(body) : undefined
   });
@@ -560,17 +560,11 @@ async function loadFromServer() {
       if (d.var_json) varData = JSON.parse(d.var_json);
       if (d.subs_json) subs = JSON.parse(d.subs_json);
       if (d.requests_json) requests = JSON.parse(d.requests_json);
-      // DEBUG: show what weeks are in the data
-      const weeks = new Set();
-      Object.keys(schedule).forEach(k => {
-        const match = k.match(/^(-?\d+)_/);
-        if (match) weeks.add(match[1]);
-      });
-      console.log('📊 השבועות בנתונים:', Array.from(weeks).sort((a,b)=>a-b));
-      console.log('📌 weekOff כרגע:', weekOff);
+      console.log('📂 טען מSupa...', Object.keys(schedule).length, 'שיבוצים');
     }
     setSyncStatus('synced');
   } catch(e) {
+    console.error('❌ שגיאה בטעינה:', e);
     setSyncStatus('offline','שגיאת חיבור: '+(e&&e.message?e.message:e));
     loadLocal();
   }
@@ -581,16 +575,20 @@ async function saveToServer() {
   setSyncStatus('syncing');
   saveLocal();
   try {
-    await supaFetch('POST', {
+    const data={
       id: 1,
       schedule_json: JSON.stringify(schedule),
       constraints_json: JSON.stringify(constraints),
       var_json: JSON.stringify(varData),
       subs_json: JSON.stringify(subs),
       requests_json: JSON.stringify(requests)
-    });
+    };
+    console.log('💾 שומר לSupa...', Object.keys(schedule).length, 'שיבוצים');
+    await supaFetch('POST', data);
+    console.log('✓ נשמר בהצלחה');
     setSyncStatus('synced');
   } catch(e) {
+    console.error('❌ שגיאה בשמירה:', e);
     setSyncStatus('error');
   }
 }
@@ -600,10 +598,12 @@ function scheduleAutoSave() {
   autoSaveTimer = setTimeout(saveToServer, 1500);
 }
 
-// ── AUTO REFRESH every 30 seconds ──
+// ── AUTO REFRESH every 45 seconds (but NOT during editing) ──
 setInterval(()=>{
-  if(!editMode) loadFromServer();
-}, 30000);
+  if(!editMode && currentUser) {
+    loadFromServer();
+  }
+}, 45000);
 
 function saveLocal() {
   localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests}));
@@ -695,7 +695,12 @@ function toggleEdit(){
     const pw=prompt('סיסמת מנהל:');
     if(pw!=='4466') return;
   }
-  editMode=!editMode;openCell=null;openVarDay=null;document.getElementById('cell-popup').innerHTML='';render();
+  editMode=!editMode;
+  if(!editMode){
+    // סגרנו עריכה - טען מייד מ-Supabase כדי לראות נתונים אחרונים
+    setTimeout(loadFromServer, 500);
+  }
+  openCell=null;openVarDay=null;document.getElementById('cell-popup').innerHTML='';render();
 }
 function render(){
   document.getElementById('wlabel').textContent=fmtWeek(getWeekStart(weekOff));
