@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v10'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v11'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -694,12 +694,11 @@ function toggleEdit(){
   if(!editMode){
     const pw=prompt('סיסמת מנהל:');
     if(pw!=='4466') return;
+  }else{
+    // סוגרים עריכה - שמור תחילה לSupabase!
+    saveToServer();
   }
   editMode=!editMode;
-  if(!editMode){
-    // סגרנו עריכה - טען מייד מ-Supabase כדי לראות נתונים אחרונים
-    setTimeout(loadFromServer, 500);
-  }
   openCell=null;openVarDay=null;document.getElementById('cell-popup').innerHTML='';render();
 }
 function render(){
