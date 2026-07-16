@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v26'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v27'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -583,19 +583,36 @@ async function loadFromServer() {
       if (d.schedule_json) {
         schedule = JSON.parse(d.schedule_json);
         console.log('✓ Loaded schedule:', Object.keys(schedule).length, 'items');
-        console.log('First 3 items:', Object.keys(schedule).slice(0,3));
       }
       if (d.constraints_json) constraints = JSON.parse(d.constraints_json);
       if (d.var_json) varData = JSON.parse(d.var_json);
       if (d.subs_json) subs = JSON.parse(d.subs_json);
       if (d.requests_json) requests = JSON.parse(d.requests_json);
+      
+      // עדכן בLocal גם כן כדי שיהיה מסונכרן
+      localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests}));
+      console.log('✓ Updated localStorage with Supabase data');
+      
     } else {
       console.log('✗ No data returned from Supabase');
     }
     setSyncStatus('synced');
   } catch(e) {
     console.error('✗ Supabase load failed:', e.message);
-    setSyncStatus('error');
+    console.log('Falling back to localStorage...');
+    // אם Supabase נכשל - טעון מLocal
+    try {
+      const d = JSON.parse(localStorage.getItem('scheduleData')||'{}');
+      if (d.schedule) schedule = d.schedule;
+      if (d.constraints) constraints = d.constraints;
+      if (d.varData) varData = d.varData;
+      if (d.subs) subs = d.subs;
+      if (d.requests) requests = d.requests;
+      console.log('✓ Loaded from localStorage');
+    } catch(e2) {
+      console.error('✗ Even localStorage failed');
+    }
+    setSyncStatus('synced');
   }
   
   render(); 
