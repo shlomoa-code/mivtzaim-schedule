@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v22'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v23'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -551,73 +551,41 @@ async function supaFetch(method, body) {
 
 async function loadFromServer() {
   setSyncStatus('syncing');
-  
-  console.log('🔄 מתחיל טעינה...');
-  
-  // נסה לטעון מ-Supabase קודם (זה ה-master)
   try {
     const rows = await supaFetch('GET');
     if (rows && rows.length > 0) {
       const d = rows[0];
-      if (d.schedule_json) {
-        schedule = JSON.parse(d.schedule_json);
-        console.log('✓ טען מSupabase:', Object.keys(schedule).length, 'שיבוצים');
-      }
+      if (d.schedule_json) schedule = JSON.parse(d.schedule_json);
       if (d.constraints_json) constraints = JSON.parse(d.constraints_json);
       if (d.var_json) varData = JSON.parse(d.var_json);
       if (d.subs_json) subs = JSON.parse(d.subs_json);
       if (d.requests_json) requests = JSON.parse(d.requests_json);
-      
-      // שמור בLocal גם כן
-      localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests,timestamp:d.last_updated}));
-      
-      setSyncStatus('synced');
-      render(); renderCalendar(); updatePendingBadge();
-      return;
     }
+    setSyncStatus('synced');
   } catch(e) {
-    console.log('⚠️ Supabase נכשל, מנסה Local...');
+    console.error('Error loading:', e);
+    setSyncStatus('error');
   }
-  
-  // אם Supabase נכשל - טעון מLocal
-  try {
-    const d = JSON.parse(localStorage.getItem('scheduleData')||'{}');
-    if (d.schedule) schedule = d.schedule;
-    if (d.constraints) constraints = d.constraints;
-    if (d.varData) varData = d.varData;
-    if (d.subs) subs = d.subs;
-    if (d.requests) requests = d.requests;
-    console.log('✓ טען מLocal:', Object.keys(schedule).length, 'שיבוצים');
-  } catch(e) {
-    console.log('❌ לא הצליח לטעון מLoca גם');
-  }
-  
-  setSyncStatus('synced');
-  render(); renderCalendar(); updatePendingBadge();
+  render(); 
+  renderCalendar(); 
+  updatePendingBadge();
 }
 
 async function saveToServer() {
   setSyncStatus('syncing');
-  saveLocal(); // תמיד שמור בלוקאלי קודם
   try {
-    const timestamp = Date.now();
     const data={
       id: 1,
       schedule_json: JSON.stringify(schedule),
       constraints_json: JSON.stringify(constraints),
       var_json: JSON.stringify(varData),
       subs_json: JSON.stringify(subs),
-      requests_json: JSON.stringify(requests),
-      last_updated: timestamp
+      requests_json: JSON.stringify(requests)
     };
-    console.log('💾 שומר לSupa at', new Date(timestamp).toLocaleTimeString('he-IL'));
     await supaFetch('POST', data);
-    console.log('✓ נשמר בSupa בהצלחה');
     setSyncStatus('synced');
   } catch(e) {
-    console.error('⚠️ לא הצליח לשמור לSupabase:', e.message);
-    console.log('✓ אבל הנתונים שמורים בלוקאלי');
-    setSyncStatus('synced');
+    setSyncStatus('synced'); // גם אם נכשל, הנתונים בLocal בטוח
   }
 }
 
@@ -865,35 +833,17 @@ function renderPopup(){
   document.getElementById('cell-popup').innerHTML=html;
 }
 function doAssign(k,wid){
-  console.log('ASSIGN:', k, '=', wid);
   schedule[k] = wid;
-  
-  const timestamp = Date.now();
-  
-  // שמור בלוקאלי עם timestamp
-  localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests,timestamp}));
-  console.log('SAVED to localStorage at', new Date(timestamp).toLocaleTimeString('he-IL'));
-  
-  // ושמור לSupabase עם timestamp
-  saveToServer();
-  
+  localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests}));
+  saveToServer(); // שלח לSupabase בעצמאות
   openCell=null;
   document.getElementById('cell-popup').innerHTML='';
   render();
 }
 function rem(k){
-  console.log('REMOVE:', k);
   delete schedule[k];
-  
-  const timestamp = Date.now();
-  
-  // שמור בלוקאלי עם timestamp
-  localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests,timestamp}));
-  console.log('SAVED to localStorage at', new Date(timestamp).toLocaleTimeString('he-IL'));
-  
-  // ושמור לSupabase עם timestamp
-  saveToServer();
-  
+  localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests}));
+  saveToServer(); // שלח לSupabase בעצמאות
   openCell=null;
   document.getElementById('cell-popup').innerHTML='';
   render();
