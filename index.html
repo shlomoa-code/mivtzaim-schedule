@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v13'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v14'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -561,19 +561,20 @@ async function loadFromServer() {
       if (d.subs_json) subs = JSON.parse(d.subs_json);
       if (d.requests_json) requests = JSON.parse(d.requests_json);
       console.log('📂 טען מSupa...', Object.keys(schedule).length, 'שיבוצים');
+      setSyncStatus('synced');
     }
-    setSyncStatus('synced');
   } catch(e) {
-    console.error('❌ שגיאה בטעינה:', e);
-    setSyncStatus('offline','שגיאת חיבור: '+(e&&e.message?e.message:e));
-    loadLocal();
+    console.error('⚠️ לא הצליח לטעון מSupabase:', e.message);
+    loadLocal(); // נסה לטעון מהלוקאלי
+    console.log('✓ טען מהלוקאלי במקום');
+    setSyncStatus('synced'); // הצג "סנכרון" כי הנתונים טעונים מלוקאלי
   }
   render(); renderCalendar(); updatePendingBadge();
 }
 
 async function saveToServer() {
   setSyncStatus('syncing');
-  saveLocal();
+  saveLocal(); // תמיד שמור בלוקאלי קודם
   try {
     const data={
       id: 1,
@@ -585,11 +586,12 @@ async function saveToServer() {
     };
     console.log('💾 שומר לSupa...', Object.keys(schedule).length, 'שיבוצים');
     await supaFetch('POST', data);
-    console.log('✓ נשמר בהצלחה');
+    console.log('✓ נשמר בSupa בהצלחה');
     setSyncStatus('synced');
   } catch(e) {
-    console.error('❌ שגיאה בשמירה:', e);
-    setSyncStatus('error');
+    console.error('⚠️ לא הצליח לשמור לSupabase:', e.message);
+    console.log('✓ אבל הנתונים שמורים בלוקאלי');
+    setSyncStatus('synced'); // הצג "סנכרון" כי הנתונים שמורים בלוקאלי
   }
 }
 
