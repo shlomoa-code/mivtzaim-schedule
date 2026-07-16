@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v24'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v25'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -551,21 +551,35 @@ async function supaFetch(method, body) {
 
 async function loadFromServer() {
   setSyncStatus('syncing');
+  
+  console.log('=== LOADING FROM SUPABASE ===');
+  
   try {
     const rows = await supaFetch('GET');
+    console.log('Rows returned:', rows ? rows.length : 'none');
+    
     if (rows && rows.length > 0) {
       const d = rows[0];
-      if (d.schedule_json) schedule = JSON.parse(d.schedule_json);
+      console.log('Got data from Supabase');
+      
+      if (d.schedule_json) {
+        schedule = JSON.parse(d.schedule_json);
+        console.log('✓ Loaded schedule:', Object.keys(schedule).length, 'items');
+        console.log('First 3 items:', Object.keys(schedule).slice(0,3));
+      }
       if (d.constraints_json) constraints = JSON.parse(d.constraints_json);
       if (d.var_json) varData = JSON.parse(d.var_json);
       if (d.subs_json) subs = JSON.parse(d.subs_json);
       if (d.requests_json) requests = JSON.parse(d.requests_json);
+    } else {
+      console.log('✗ No data returned from Supabase');
     }
     setSyncStatus('synced');
   } catch(e) {
-    console.error('Error loading:', e);
+    console.error('✗ Supabase load failed:', e.message);
     setSyncStatus('error');
   }
+  
   render(); 
   renderCalendar(); 
   updatePendingBadge();
@@ -573,19 +587,27 @@ async function loadFromServer() {
 
 async function saveToServer() {
   setSyncStatus('syncing');
+  const data={
+    id: 1,
+    schedule_json: JSON.stringify(schedule),
+    constraints_json: JSON.stringify(constraints),
+    var_json: JSON.stringify(varData),
+    subs_json: JSON.stringify(subs),
+    requests_json: JSON.stringify(requests)
+  };
+  
+  console.log('=== SAVING TO SUPABASE ===');
+  console.log('Schedule keys:', Object.keys(schedule).length);
+  console.log('First 3 items:', Object.keys(schedule).slice(0,3));
+  console.log('Full data:', JSON.stringify(schedule).substring(0, 200));
+  
   try {
-    const data={
-      id: 1,
-      schedule_json: JSON.stringify(schedule),
-      constraints_json: JSON.stringify(constraints),
-      var_json: JSON.stringify(varData),
-      subs_json: JSON.stringify(subs),
-      requests_json: JSON.stringify(requests)
-    };
     await supaFetch('POST', data);
+    console.log('✓ Saved to Supabase successfully');
     setSyncStatus('synced');
   } catch(e) {
-    setSyncStatus('synced'); // גם אם נכשל, הנתונים בLocal בטוח
+    console.error('✗ Supabase save failed:', e);
+    setSyncStatus('synced');
   }
 }
 
@@ -690,13 +712,21 @@ function swTab(tab,el){
 // ── SCHEDULE ──
 function toggleEdit(){
   if(!editMode){
+    console.log('>>> Opening edit mode');
     const pw=prompt('סיסמת מנהל:');
     if(pw!=='4466') return;
     editMode=true;
   }else{
+    console.log('>>> Closing edit mode, saving...');
+    console.log('>>> Schedule before save:', Object.keys(schedule).length, 'items');
+    
     // סוגרים עריכה - שמור בלוקאלי + לSupabase
     localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests}));
+    console.log('>>> Saved to localStorage');
+    
     saveToServer(); // בעצמאות, אל תחכה
+    console.log('>>> Called saveToServer');
+    
     editMode=false;
   }
   openCell=null;
@@ -825,9 +855,16 @@ function renderPopup(){
   document.getElementById('cell-popup').innerHTML=html;
 }
 function doAssign(k,wid){
+  console.log('>>> doAssign called:', k, '=', wid);
   schedule[k] = wid;
+  console.log('>>> Updated schedule, now:', Object.keys(schedule).length, 'items');
+  
   localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests}));
+  console.log('>>> Saved to localStorage');
+  
   saveToServer(); // שלח לSupabase בעצמאות
+  console.log('>>> Called saveToServer');
+  
   openCell=null;
   document.getElementById('cell-popup').innerHTML='';
   render();
