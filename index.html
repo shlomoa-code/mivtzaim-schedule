@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v20'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v21'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -564,6 +564,15 @@ async function loadFromServer() {
   
   const localTimestamp = localData.timestamp || 0;
   
+  // תמיד התחל עם local data
+  if (localData.schedule) schedule = localData.schedule;
+  if (localData.constraints) constraints = localData.constraints;
+  if (localData.varData) varData = localData.varData;
+  if (localData.subs) subs = localData.subs;
+  if (localData.requests) requests = localData.requests;
+  console.log('📂 טען מLocal:', Object.keys(schedule).length, 'שיבוצים');
+  
+  // עכשיו נסה לטעון מSupabase ועדכן אם חדש יותר
   try {
     const rows = await supaFetch('GET');
     if (rows && rows.length > 0) {
@@ -573,34 +582,25 @@ async function loadFromServer() {
       console.log('⏰ Local:', new Date(localTimestamp).toLocaleTimeString('he-IL'));
       console.log('⏰ Supa:', new Date(supaTimestamp).toLocaleTimeString('he-IL'));
       
-      // השתמש בנתונים החדשים יותר (לפי timestamp)
+      // אם Supabase חדש יותר - התחלף
       if (supaTimestamp > localTimestamp) {
-        if (d.schedule_json) schedule = JSON.parse(d.schedule_json);
+        if (d.schedule_json) {
+          schedule = JSON.parse(d.schedule_json);
+          console.log('✓ עדכנתי מSupabase (חדש יותר):', Object.keys(schedule).length, 'שיבוצים');
+        }
         if (d.constraints_json) constraints = JSON.parse(d.constraints_json);
         if (d.var_json) varData = JSON.parse(d.var_json);
         if (d.subs_json) subs = JSON.parse(d.subs_json);
         if (d.requests_json) requests = JSON.parse(d.requests_json);
-        console.log('✓ השתמש בSupabase (חדש יותר)');
-      } else {
-        if (localData.schedule) schedule = localData.schedule;
-        if (localData.constraints) constraints = localData.constraints;
-        if (localData.varData) varData = localData.varData;
-        if (localData.subs) subs = localData.subs;
-        if (localData.requests) requests = localData.requests;
-        console.log('✓ השתמש בLocal (חדש יותר)');
       }
     }
     setSyncStatus('synced');
   } catch(e) {
-    console.log('⚠️ Supabase לא זמינה, השתמשתי בLocal');
-    if (localData.schedule) schedule = localData.schedule;
-    if (localData.constraints) constraints = localData.constraints;
-    if (localData.varData) varData = localData.varData;
-    if (localData.subs) subs = localData.subs;
-    if (localData.requests) requests = localData.requests;
+    console.log('⚠️ Supabase לא זמינה - משתמש בLocal');
     setSyncStatus('synced');
   }
   
+  console.log('✓ סיום טעינה. סה"כ שיבוצים:', Object.keys(schedule).length);
   render(); renderCalendar(); updatePendingBadge();
 }
 
