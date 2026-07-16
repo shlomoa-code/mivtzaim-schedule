@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v15'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v17'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -551,24 +551,39 @@ async function supaFetch(method, body) {
 
 async function loadFromServer() {
   setSyncStatus('syncing');
+  
+  // תמיד טעון מהלוקאלי קודם
+  loadLocal();
+  console.log('📂 טען מלוקאלי');
+  
+  // ואז נסה לטעון מSupa אם זה עדכני יותר
   try {
     const rows = await supaFetch('GET');
     if (rows && rows.length > 0) {
       const d = rows[0];
-      if (d.schedule_json) schedule = JSON.parse(d.schedule_json);
-      if (d.constraints_json) constraints = JSON.parse(d.constraints_json);
-      if (d.var_json) varData = JSON.parse(d.var_json);
-      if (d.subs_json) subs = JSON.parse(d.subs_json);
-      if (d.requests_json) requests = JSON.parse(d.requests_json);
-      console.log('📂 טען מSupa...', Object.keys(schedule).length, 'שיבוצים');
-      setSyncStatus('synced');
+      const supaSchedule = d.schedule_json ? JSON.parse(d.schedule_json) : {};
+      const supaConstraints = d.constraints_json ? JSON.parse(d.constraints_json) : {};
+      const supaVarData = d.var_json ? JSON.parse(d.var_json) : {};
+      const supaSubs = d.subs_json ? JSON.parse(d.subs_json) : [];
+      const supaRequests = d.requests_json ? JSON.parse(d.requests_json) : [];
+      
+      // עדכן רק אם יש נתונים בSupa
+      if (Object.keys(supaSchedule).length > 0) {
+        schedule = supaSchedule;
+        constraints = supaConstraints;
+        varData = supaVarData;
+        subs = supaSubs;
+        requests = supaRequests;
+        console.log('📂 עדכן מSupa...', Object.keys(schedule).length, 'שיבוצים');
+      }
     }
+    setSyncStatus('synced');
   } catch(e) {
-    console.error('⚠️ לא הצליח לטעון מSupabase:', e.message);
-    loadLocal(); // נסה לטעון מהלוקאלי
-    console.log('✓ טען מהלוקאלי במקום');
-    setSyncStatus('synced'); // הצג "סנכרון" כי הנתונים טעונים מלוקאלי
+    console.error('⚠️ לא הצליח טעינה מSupabase:', e.message);
+    console.log('✓ משתמש בנתונים מלוקאלי');
+    setSyncStatus('synced');
   }
+  
   render(); renderCalendar(); updatePendingBadge();
 }
 
@@ -838,7 +853,7 @@ function renderPopup(){
   html+=`</div>`;
   document.getElementById('cell-popup').innerHTML=html;
 }
-function doAssign(k,wid){
+async function doAssign(k,wid){
   console.log('🔴 doAssign קרא עם:', k, wid);
   if(!schedule) schedule={};
   schedule[k]=wid;
@@ -846,20 +861,22 @@ function doAssign(k,wid){
   openCell=null;
   document.getElementById('cell-popup').innerHTML='';
   render();
-  // שמור מיד!
+  // שמור מיד ותחכה להסתיים!
   console.log('💾 קוראים ל-saveToServer מ-doAssign');
-  saveToServer();
+  await saveToServer();
+  console.log('✓ saveToServer הסתיים!');
 }
-function rem(k){
+async function rem(k){
   console.log('🔴 rem קרא עם:', k);
   delete schedule[k];
   console.log('✓ schedule עודכן:', schedule);
   openCell=null;
   document.getElementById('cell-popup').innerHTML='';
   render();
-  // שמור מיד!
+  // שמור מיד ותחכה להסתיים!
   console.log('💾 קוראים ל-saveToServer מ-rem');
-  saveToServer();
+  await saveToServer();
+  console.log('✓ saveToServer הסתיים!');
 }
 function autoFill(){
   const allW=[...WORKERS,...subs.map(s=>({id:s}))];
