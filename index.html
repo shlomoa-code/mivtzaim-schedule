@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v14'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v15'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -608,7 +608,14 @@ setInterval(()=>{
 }, 45000);
 
 function saveLocal() {
-  localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests}));
+  try {
+    const data={schedule,constraints,varData,subs,requests};
+    console.log('💾 שומר לוקאלי:', Object.keys(schedule).length, 'שיבוצים');
+    localStorage.setItem('scheduleData', JSON.stringify(data));
+    console.log('✓ נשמר בלוקאלי בהצלחה');
+  } catch(e) {
+    console.error('❌ שגיאה בשמירה לוקאלית:', e);
+  }
 }
 
 function loadLocal() {
@@ -832,24 +839,27 @@ function renderPopup(){
   document.getElementById('cell-popup').innerHTML=html;
 }
 function doAssign(k,wid){
+  console.log('🔴 doAssign קרא עם:', k, wid);
+  if(!schedule) schedule={};
   schedule[k]=wid;
+  console.log('✓ schedule עודכן:', schedule);
   openCell=null;
   document.getElementById('cell-popup').innerHTML='';
-  console.log('📌 שובץ:',wid,'לתא',k);
   render();
-  // שמור תוך שנייה אחת
-  clearTimeout(autoSaveTimer);
-  autoSaveTimer = setTimeout(saveToServer, 1000);
+  // שמור מיד!
+  console.log('💾 קוראים ל-saveToServer מ-doAssign');
+  saveToServer();
 }
 function rem(k){
+  console.log('🔴 rem קרא עם:', k);
   delete schedule[k];
+  console.log('✓ schedule עודכן:', schedule);
   openCell=null;
   document.getElementById('cell-popup').innerHTML='';
-  console.log('❌ הסר מתא:',k);
   render();
-  // שמור תוך שנייה אחת
-  clearTimeout(autoSaveTimer);
-  autoSaveTimer = setTimeout(saveToServer, 1000);
+  // שמור מיד!
+  console.log('💾 קוראים ל-saveToServer מ-rem');
+  saveToServer();
 }
 function autoFill(){
   const allW=[...WORKERS,...subs.map(s=>({id:s}))];
