@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v25'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v26'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -529,6 +529,9 @@ async function supaFetch(method, body) {
   const url = method==='GET' 
     ? `${SUPA_URL}/rest/v1/${TABLE}?select=*`
     : `${SUPA_URL}/rest/v1/${TABLE}?on_conflict=id`;
+  
+  console.log('>>> supaFetch', method, 'to', url.substring(0, 50));
+  
   const res = await fetch(url, {
     method: method==='POST' ? 'POST' : method,
     cache: 'no-store',
@@ -541,12 +544,27 @@ async function supaFetch(method, body) {
     },
     body: body ? JSON.stringify(body) : undefined
   });
+  
+  console.log('>>> Response status:', res.status, res.ok);
+  
   if (!res.ok) {
     const errText = await res.text();
-    console.error('Supabase error:', errText);
+    console.error('>>> Supabase error:', errText);
     throw new Error(errText);
   }
-  return method==='GET' ? res.json() : res;
+  
+  if (method==='GET') {
+    const data = await res.json();
+    console.log('>>> Got data from Supabase, rows:', data ? data.length : 'null');
+    if (data && data.length > 0) {
+      console.log('>>> First row keys:', Object.keys(data[0]));
+      console.log('>>> schedule_json exists:', !!data[0].schedule_json);
+    }
+    return data;
+  }
+  
+  console.log('>>> POST successful');
+  return res;
 }
 
 async function loadFromServer() {
