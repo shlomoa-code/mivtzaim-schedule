@@ -259,7 +259,9 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 
   <!-- MY CONSTRAINTS -->
   <div id="tab-myconstraints" style="display:none">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+    <div style="background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:0.75rem;margin-bottom:1rem;text-align:center;font-size:13px;font-weight:600;color:var(--text-primary)">
+      📅 שבוע: <span id="week-label-myconstraints"></span>
+    </div>
       <div class="page-title" style="margin-bottom:0"><i class="ti ti-adjustments"></i>האילוצים שלי</div>
       <svg class="topbar-logo" viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg"><rect width="560" height="560" fill="#E24B4A" rx="80"/><text x="280" y="260" text-anchor="middle" font-size="100" font-weight="700" fill="#FFFFFF" font-family="Arial, sans-serif">מבצעים</text><g transform="translate(280, 420)"><circle cx="0" cy="0" r="32" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="20" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="8" fill="#FFFFFF"/></g></svg>
     </div>
@@ -292,7 +294,9 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 
   <!-- REQUESTS -->
   <div id="tab-requests" style="display:none">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+    <div style="background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:0.75rem;margin-bottom:1rem;text-align:center;font-size:13px;font-weight:600;color:var(--text-primary)">
+      📅 שבוע: <span id="week-label-requests"></span>
+    </div>
       <div class="page-title" style="margin-bottom:0"><i class="ti ti-beach"></i>בקשת חופש</div>
       <svg class="topbar-logo" viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg"><rect width="560" height="560" fill="#E24B4A" rx="80"/><text x="280" y="260" text-anchor="middle" font-size="100" font-weight="700" fill="#FFFFFF" font-family="Arial, sans-serif">מבצעים</text><g transform="translate(280, 420)"><circle cx="0" cy="0" r="32" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="20" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="8" fill="#FFFFFF"/></g></svg>
     </div>
@@ -322,7 +326,9 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 
   <!-- MANAGER -->
   <div id="tab-manager" style="display:none">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+    <div style="background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:0.75rem;margin-bottom:1rem;text-align:center;font-size:13px;font-weight:600;color:var(--text-primary)">
+      📅 שבוע: <span id="week-label-manager"></span>
+    </div>
       <div class="page-title" style="margin-bottom:0"><i class="ti ti-clipboard-check"></i>ניהול בקשות חופש</div>
       <svg class="topbar-logo" viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg"><rect width="560" height="560" fill="#E24B4A" rx="80"/><text x="280" y="260" text-anchor="middle" font-size="100" font-weight="700" fill="#FFFFFF" font-family="Arial, sans-serif">מבצעים</text><g transform="translate(280, 420)"><circle cx="0" cy="0" r="32" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="20" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="8" fill="#FFFFFF"/></g></svg>
     </div>
@@ -333,7 +339,9 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 
   <!-- WEEKLY CONSTRAINTS TABLE -->
   <div id="tab-constraints-weekly" style="display:none">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+    <div style="background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:0.75rem;margin-bottom:1rem;text-align:center;font-size:13px;font-weight:600;color:var(--text-primary)">
+      📅 שבוע: <span id="week-label-constraints-weekly"></span>
+    </div>
       <div class="page-title" style="margin-bottom:0"><i class="ti ti-table"></i>אילוצים שבועיים</div>
       <svg class="topbar-logo" viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg"><rect width="560" height="560" fill="#E24B4A" rx="80"/><text x="280" y="260" text-anchor="middle" font-size="100" font-weight="700" fill="#FFFFFF" font-family="Arial, sans-serif">מבצעים</text><g transform="translate(280, 420)"><circle cx="0" cy="0" r="32" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="20" fill="none" stroke="#FFFFFF" stroke-width="4"/><circle cx="0" cy="0" r="8" fill="#FFFFFF"/></g></svg>
     </div>
@@ -373,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v7'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v8'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -631,7 +639,7 @@ function getWeekStart(off){
   return weekStart;
 }
 function fmtWeek(s){const e=new Date(s);e.setDate(e.getDate()+6);const f=d=>d.toLocaleDateString('he-IL',{day:'numeric',month:'numeric'});return f(s)+' — '+f(e);}
-function chgWk(d){weekOff+=d;openCell=null;openVarDay=null;render();}
+function chgWk(d){weekOff+=d;openCell=null;openVarDay=null;updateWeekLabels();render();}
 function workerCount(wid){
   let t=0;
   // count regular shifts only on days with no var entry
@@ -657,12 +665,22 @@ function isApprovedVacDay(wid,weekStart,di){const d=new Date(weekStart);d.setDat
 function updatePendingBadge(){const n=pendingCount();const b=document.getElementById('pending-badge');b.textContent=n;b.style.display=n>0?'':'none';}
 
 // ── TABS ──
+// ── UPDATE WEEK LABELS ──
+function updateWeekLabels(){
+  const weekLabel=fmtWeek(getWeekStart(weekOff));
+  ['myconstraints','requests','manager','constraints-weekly'].forEach(tab=>{
+    const el=document.getElementById('week-label-'+tab);
+    if(el)el.textContent=weekLabel;
+  });
+}
+
 function swTab(tab,el){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
   ['schedule','myconstraints','constraints-weekly','requests','manager','calendar'].forEach(t=>{
     document.getElementById('tab-'+t).style.display=t===tab?'block':'none';
   });
+  updateWeekLabels();
   if(tab==='requests')renderRequestsTab();
   if(tab==='manager')renderManagerTab();
   if(tab==='myconstraints')renderMyConstraintsTab();
