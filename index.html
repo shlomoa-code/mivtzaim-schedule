@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v28'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v29'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -569,6 +569,7 @@ async function supaFetch(method, body) {
 
 async function loadFromServer() {
   setSyncStatus('syncing');
+  weekOff = 0; // תמיד התחל בשבוע הנוכחי!
   
   console.log('=== LOADING FROM SUPABASE ===');
   
