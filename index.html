@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v31'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v32'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -540,7 +540,7 @@ async function supaFetch(method, body) {
       'Authorization': `Bearer ${SUPA_SECRET}`,
       'Content-Type': 'application/json',
       'Cache-Control': 'no-cache',
-      'Prefer': method==='POST' ? 'return=minimal' : 'return=representation'
+      'Prefer': method==='POST' ? 'resolution=merge-duplicates,return=minimal' : 'return=representation'
     },
     body: body ? JSON.stringify(body) : undefined
   });
