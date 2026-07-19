@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v30'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v31'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -654,9 +654,23 @@ async function loadFromServer() {
 
 async function saveToServer() {
   setSyncStatus('syncing');
+  
+  // Normalize schedule keys to always be week 0
+  const normalized = {};
+  Object.keys(schedule).forEach(k => {
+    const parts = k.split('_');
+    if (parts.length >= 3) {
+      // החלף את weekOff הראשון ב-0
+      const newKey = '0_' + parts.slice(1).join('_');
+      normalized[newKey] = schedule[k];
+    } else {
+      normalized[k] = schedule[k];
+    }
+  });
+  
   const data={
     id: 1,
-    schedule_json: JSON.stringify(schedule),
+    schedule_json: JSON.stringify(normalized),
     constraints_json: JSON.stringify(constraints),
     var_json: JSON.stringify(varData),
     subs_json: JSON.stringify(subs),
@@ -664,9 +678,8 @@ async function saveToServer() {
   };
   
   console.log('=== SAVING TO SUPABASE ===');
-  console.log('Schedule keys:', Object.keys(schedule).length);
-  console.log('First 3 items:', Object.keys(schedule).slice(0,3));
-  console.log('Full data:', JSON.stringify(schedule).substring(0, 200));
+  console.log('Schedule keys:', Object.keys(normalized).length);
+  console.log('First 3 items:', Object.keys(normalized).slice(0,3));
   
   try {
     await supaFetch('POST', data);
