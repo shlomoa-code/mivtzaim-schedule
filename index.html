@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v30'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v31'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -1232,7 +1232,7 @@ if ('serviceWorker' in navigator) {
 // ── START ──
 emailjs.init(EJS_PUBLIC_KEY);
 checkLogin();
-window.addEventListener('online', ()=>loadFromServer());
+// Do NOT auto-load when coming online - it overwrites manual edits
 setTimeout(()=>{const inp=document.getElementById('sub-inp');if(inp)inp.addEventListener('keydown',e=>{if(e.key==='Enter')addSub();});},500);
 </script>
 </body>
