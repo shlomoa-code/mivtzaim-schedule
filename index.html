@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v31'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v30'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -569,66 +569,39 @@ async function supaFetch(method, body) {
 
 async function loadFromServer() {
   setSyncStatus('syncing');
-  weekOff = 0; // תמיד התחל בשבוע הנוכחי!
-  
-  console.log('=== LOADING FROM SUPABASE ===');
+  weekOff = 0; // תמיד התחל בשבוע הנוכחי
   
   try {
     const rows = await supaFetch('GET');
-    console.log('Rows returned:', rows ? rows.length : 'none');
     
     if (rows && rows.length > 0) {
       const d = rows[0];
-      console.log('Got data from Supabase');
-      
-      try {
-        if (d.schedule_json) {
-          const parsed = JSON.parse(d.schedule_json);
-          
-          // Normalize keys - כל מפתח שמתחיל במספר, הפוך אותו ל-0
-          const normalized = {};
-          Object.keys(parsed).forEach(k => {
-            // מפתחות הם כמו: "weekOff_shift_day"
-            const parts = k.split('_');
-            if (parts.length >= 3) {
-              // החלף את weekOff הראשון ב-0
-              const newKey = '0_' + parts.slice(1).join('_');
-              normalized[newKey] = parsed[k];
-            } else {
-              normalized[k] = parsed[k];
-            }
-          });
-          
-          schedule = normalized;
-          console.log('✓ Loaded and normalized schedule:', Object.keys(schedule).length, 'keys');
-          console.log('   Sample keys:', Object.keys(schedule).slice(0, 5));
-        }
-      } catch(e) {
-        console.error('✗ Failed to parse schedule_json:', e);
-        schedule = {};
+      if (d.schedule_json) {
+        const parsed = JSON.parse(d.schedule_json);
+        // Normalize keys - כל מפתח שמתחיל במספר שלא 0, הפוך אותו ל-0
+        const normalized = {};
+        Object.keys(parsed).forEach(k => {
+          const parts = k.split('_');
+          if (parts.length >= 3) {
+            const newKey = '0_' + parts.slice(1).join('_');
+            normalized[newKey] = parsed[k];
+          } else {
+            normalized[k] = parsed[k];
+          }
+        });
+        schedule = normalized;
       }
+      if (d.constraints_json) constraints = JSON.parse(d.constraints_json);
+      if (d.var_json) varData = JSON.parse(d.var_json);
+      if (d.subs_json) subs = JSON.parse(d.subs_json);
+      if (d.requests_json) requests = JSON.parse(d.requests_json);
       
-      try {
-        if (d.constraints_json) constraints = JSON.parse(d.constraints_json);
-        if (d.var_json) varData = JSON.parse(d.var_json);
-        if (d.subs_json) subs = JSON.parse(d.subs_json);
-        if (d.requests_json) requests = JSON.parse(d.requests_json);
-        console.log('✓ Loaded all data');
-      } catch(e) {
-        console.error('✗ Failed to parse other data:', e);
-      }
-      
-      // עדכן בLocal גם כן כדי שיהיה מסונכרן
+      // עדכן בLocal גם כן
       localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests}));
-      console.log('✓ Updated localStorage');
-      
-    } else {
-      console.log('✗ No data returned from Supabase - rows is', rows);
     }
     setSyncStatus('synced');
   } catch(e) {
-    console.error('✗ Supabase load failed:', e.message);
-    console.log('Falling back to localStorage...');
+    // אם Supabase נכשל - טעון מLocal
     try {
       const d = JSON.parse(localStorage.getItem('scheduleData')||'{}');
       if (d.schedule) schedule = d.schedule;
@@ -636,16 +609,9 @@ async function loadFromServer() {
       if (d.varData) varData = d.varData;
       if (d.subs) subs = d.subs;
       if (d.requests) requests = d.requests;
-      console.log('✓ Loaded from localStorage, schedule has', Object.keys(schedule).length, 'keys');
-    } catch(e2) {
-      console.error('✗ Even localStorage failed');
-    }
+    } catch(e2) {}
     setSyncStatus('synced');
   }
-  
-  console.log('=== FINAL STATE ===');
-  console.log('Schedule:', Object.keys(schedule).length, 'keys');
-  console.log('Constraints:', Object.keys(constraints).length, 'keys');
   
   render(); 
   renderCalendar(); 
@@ -655,12 +621,11 @@ async function loadFromServer() {
 async function saveToServer() {
   setSyncStatus('syncing');
   
-  // Normalize schedule keys to always be week 0
+  // Normalize schedule keys to always be week 0 for storage
   const normalized = {};
   Object.keys(schedule).forEach(k => {
     const parts = k.split('_');
     if (parts.length >= 3) {
-      // החלף את weekOff הראשון ב-0
       const newKey = '0_' + parts.slice(1).join('_');
       normalized[newKey] = schedule[k];
     } else {
@@ -677,16 +642,10 @@ async function saveToServer() {
     requests_json: JSON.stringify(requests)
   };
   
-  console.log('=== SAVING TO SUPABASE ===');
-  console.log('Schedule keys:', Object.keys(normalized).length);
-  console.log('First 3 items:', Object.keys(normalized).slice(0,3));
-  
   try {
     await supaFetch('POST', data);
-    console.log('✓ Saved to Supabase successfully');
     setSyncStatus('synced');
   } catch(e) {
-    console.error('✗ Supabase save failed:', e);
     setSyncStatus('synced');
   }
 }
