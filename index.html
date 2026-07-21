@@ -973,8 +973,8 @@ function renderRequestsTab(){
   document.getElementById('req-form-area').style.display=selectedWorker?'block':'none';
   if(selectedWorker){
     const today=new Date();
-    // Format as MM/DD/YYYY in local timezone
-    const todayStr=`${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`;
+    // Format as YYYY-MM-DD for type="date" input
+    const todayStr=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
     const fi=document.getElementById('req-from'),ti=document.getElementById('req-to');
     if(!fi.value)fi.value=todayStr;
     if(!ti.value)ti.value=todayStr;
@@ -987,21 +987,9 @@ async function submitRequest(){
   const from=document.getElementById('req-from').value,to=document.getElementById('req-to').value,note=document.getElementById('req-note').value.trim();
   if(!from||!to)return;
   
-  // Parse MM/DD/YYYY to local Date object
-  const parseDate = (str) => {
-    const [m, d, y] = str.split('/');
-    return new Date(parseInt(y), parseInt(m)-1, parseInt(d));
-  };
-  
-  const fromDate = parseDate(from);
-  const toDate = parseDate(to);
-  
-  // Swap if needed so from <= to
-  const [fDate, tDate] = fromDate <= toDate ? [fromDate, toDate] : [toDate, fromDate];
-  
-  // Convert to YYYY-MM-DD in local timezone
-  const f = dateStr(fDate);
-  const t = dateStr(tDate);
+  // from and to are already in YYYY-MM-DD format from type="date"
+  // Just swap if needed
+  const [f, t] = from <= to ? [from, to] : [to, from];
   
   const req={wid:selectedWorker,from:f,to:t,note,id:Date.now(),ts:Date.now(),status:'pending'};
   setSyncStatus('syncing');
