@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v33'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v32'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -723,25 +723,16 @@ function workerCount(wid){
   return t;
 }
 function dateStr(d){
-  // תאריך מקומי בפורמט ISO (YYYY-MM-DD) - לא UTC!
-  if (!d) return '';
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return d.toISOString().slice(0,10);
 }
 function fmtDate(s){if(!s)return '';const[y,m,dd]=s.split('-');return `${parseInt(dd)}/${parseInt(m)}/${y}`;}
 function fmtRange(f,t){return f===t?fmtDate(f):`${fmtDate(f)} — ${fmtDate(t)}`;}
 function pendingCount(){return requests.filter(r=>r.status==='pending').length;}
 function isApprovedVacDay(wid,weekStart,di){
-  // weekStart הוא Date object
-  // di הוא מספר ימים מהתחילה של השבוע
   const d=new Date(weekStart);
   d.setDate(d.getDate()+di);
-  const ds=dateStr(d); // תאריך בפורמט YYYY-MM-DD של היום הזה
-  
-  const isVac = requests.some(r=>r.wid===wid&&r.status==='approved'&&ds>=r.from&&ds<=r.to);
-  return isVac;
+  const ds=dateStr(d);
+  return requests.some(r=>r.wid===wid&&r.status==='approved'&&ds>=r.from&&ds<=r.to);
 }
 function updatePendingBadge(){const n=pendingCount();const b=document.getElementById('pending-badge');b.textContent=n;b.style.display=n>0?'':'none';}
 
@@ -889,7 +880,6 @@ function renderPopup(){
   const currentDate=new Date(weekStart);
   currentDate.setDate(currentDate.getDate()+di);
   const currentDateStr=dateStr(currentDate);
-  
   const allW=[...WORKERS,...subs.map(s=>({id:s,name:s,acls:'a-sub',dot:'#888'}))];
   const avail=[],blocked=[],onVac=[];
   allW.forEach(w=>{
@@ -973,38 +963,15 @@ function renderRequestsTab(){
   const sel=document.getElementById('worker-sel');
   sel.innerHTML=WORKERS.map(w=>`<button class="wsel-btn${selectedWorker===w.id?' active-'+w.id:''}" onclick="selectWorker('${w.id}')">${w.name}</button>`).join('');
   document.getElementById('req-form-area').style.display=selectedWorker?'block':'none';
-  if(selectedWorker){
-    const today=new Date();
-    const todayStr=`${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`;
-    const fi=document.getElementById('req-from'),ti=document.getElementById('req-to');
-    if(!fi.value)fi.value=todayStr;
-    if(!ti.value)ti.value=todayStr;
-    renderMyRequests();
-  }
+  if(selectedWorker){const today=dateStr(new Date());const fi=document.getElementById('req-from'),ti=document.getElementById('req-to');if(!fi.value)fi.value=today;if(!ti.value)ti.value=today;renderMyRequests();}
 }
 function selectWorker(wid){selectedWorker=wid;renderRequestsTab();}
 async function submitRequest(){
   if(!selectedWorker)return;
   const from=document.getElementById('req-from').value,to=document.getElementById('req-to').value,note=document.getElementById('req-note').value.trim();
   if(!from||!to)return;
-  
-  // Parse MM/DD/YYYY to Date objects
-  const parseDate = (str) => {
-    const [m, d, y] = str.split('/');
-    return new Date(parseInt(y), parseInt(m)-1, parseInt(d), 0, 0, 0, 0);
-  };
-  
-  const fromDate = parseDate(from);
-  const toDate = parseDate(to);
-  
-  // Swap if needed so from <= to
-  const [f, t] = fromDate <= toDate ? [from, to] : [to, from];
-  
-  // Convert to YYYY-MM-DD format for storage
-  const fISO = dateStr(parseDate(f));
-  const tISO = dateStr(parseDate(t));
-  
-  const req={wid:selectedWorker,from:fISO,to:tISO,note,id:Date.now(),ts:Date.now(),status:'pending'};
+  const f=from<=to?from:to,t=from<=to?to:from;
+  const req={wid:selectedWorker,from:f,to:t,note,id:Date.now(),ts:Date.now(),status:'pending'};
   setSyncStatus('syncing');
   requests.push(req);
   saveLocal();
