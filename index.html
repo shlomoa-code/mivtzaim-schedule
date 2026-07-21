@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v32'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v33'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -460,6 +460,16 @@ const SUPA_SECRET = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const TABLE = 'schedule_data';
 
 let editMode=false, subs=[], schedule={}, constraints={}, varData={}, weekOff=0, openCell=null, openVarDay=null, currentUser=null;
+
+// ── MIGRATION: Convert old constraints format to new format with notes ──
+function migrateConstraints() {
+  Object.keys(constraints).forEach(worker => {
+    if (typeof constraints[worker] === 'string') {
+      // Old format: "ok" / "blocked" / "comp"
+      constraints[worker] = { status: constraints[worker], notes: '' };
+    }
+  });
+}
 let selectedWorker=null, requests=[], calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
 let syncStatus='';
 let autoSaveTimer=null;
@@ -591,7 +601,10 @@ async function loadFromServer() {
         });
         schedule = normalized;
       }
-      if (d.constraints_json) constraints = JSON.parse(d.constraints_json);
+      if (d.constraints_json) {
+        constraints = JSON.parse(d.constraints_json);
+        migrateConstraints(); // Convert old format to new
+      }
       if (d.var_json) varData = JSON.parse(d.var_json);
       if (d.subs_json) subs = JSON.parse(d.subs_json);
       if (d.requests_json) requests = JSON.parse(d.requests_json);
@@ -605,7 +618,10 @@ async function loadFromServer() {
     try {
       const d = JSON.parse(localStorage.getItem('scheduleData')||'{}');
       if (d.schedule) schedule = d.schedule;
-      if (d.constraints) constraints = d.constraints;
+      if (d.constraints) {
+        constraints = d.constraints;
+        migrateConstraints(); // Convert old format to new
+      }
       if (d.varData) varData = d.varData;
       if (d.subs) subs = d.subs;
       if (d.requests) requests = d.requests;
@@ -1085,9 +1101,12 @@ function renderAllConstraintsBoard(){
     SHIFTS.forEach(shift=>{
       shift.days.forEach(di=>{
         const ck2=`${shift.id}_${di}`;
-        const st=c[ck2]||'ok';
+        const constraint = c[ck2];
+        const status = typeof constraint === 'string' ? constraint : (constraint?.status || 'ok');
+        const notes = typeof constraint === 'string' ? '' : (constraint?.notes || '');
         const lbl=`${DAYS[di].sh} ${shift.id==='morning'?'בוקר':shift.id==='evening'?'ערב':shift.id==='fri'?'שישי':'שבת'}`;
-        html+=`<span class="pill ${st}" style="pointer-events:none">${lbl}</span>`;
+        const noteStr = notes ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px">${notes}</div>` : '';
+        html+=`<div class="pill ${status}" style="pointer-events:none">${lbl}${noteStr}</div>`;
       });
     });
     html+='</div></div></div>';
@@ -1103,7 +1122,8 @@ function renderMyPills(){
   SHIFTS.forEach(shift=>{
     shift.days.forEach(di=>{
       const ck2=`${shift.id}_${di}`;
-      const st=c[ck2]||'ok';
+      const constraint = c[ck2];
+      const st = typeof constraint === 'string' ? constraint : (constraint?.status || 'ok');
       const dayName=DAYS[di].label;
       const shiftName=shift.id==='morning'?'בוקר':shift.id==='evening'?'ערב':shift.id==='fri'?'שישי':'שבת';
       if(st==='blocked'){
@@ -1132,20 +1152,72 @@ function renderMyConstraintsPills(){
   SHIFTS.forEach(shift=>{
     shift.days.forEach(di=>{
       const ck2=`${shift.id}_${di}`;
-      const st=c[ck2]||'ok';
+      const constraint = c[ck2];
+      // Handle both old (string) and new (object) formats
+      const status = typeof constraint === 'string' ? constraint : (constraint?.status || 'ok');
       const lbl=`${DAYS[di].sh} ${shift.id==='morning'?'בוקר':shift.id==='evening'?'ערב':shift.id==='fri'?'שישי':'שבת'}`;
-      html+=`<span class="pill ${st}" onclick="toggleMyConstraint('${ck2}')" title="לחץ לשינוי">${lbl}</span>`;
+      html+=`<span class="pill ${status}" onclick="toggleMyConstraint('${ck2}')" title="לחץ לשינוי">${lbl}</span>`;
     });
   });
   html+='</div>';
+  
+  // Add notes textarea if there are constraints
+  html += '<div style="margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem">';
+  html += '<label style="font-size:12px;color:var(--text-muted)">הערות לאילוצים:</label>';
+  
+  SHIFTS.forEach(shift=>{
+    shift.days.forEach(di=>{
+      const ck2=`${shift.id}_${di}`;
+      const constraint = c[ck2];
+      if (constraint) {
+        const notes = typeof constraint === 'string' ? '' : (constraint?.notes || '');
+        const lbl=`${DAYS[di].sh} ${shift.id==='morning'?'בוקר':shift.id==='evening'?'ערב':shift.id==='fri'?'שישי':'שבת'}`;
+        html += `<div style="margin-top:0.5rem">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">${lbl}</div>
+          <textarea class="note-inp" style="height:60px" id="note-${ck2}" placeholder="הערה..." onchange="saveConstraintNote('${ck2}')">${notes}</textarea>
+        </div>`;
+      }
+    });
+  });
+  html += '</div>';
+  
   el.innerHTML=html;
 }
+function saveConstraintNote(ck2){
+  const k = ck(constraintWorker);
+  const notes = document.getElementById(`note-${ck2}`)?.value || '';
+  
+  if (!constraints[k]) constraints[k] = {};
+  if (typeof constraints[k][ck2] === 'string') {
+    constraints[k][ck2] = { status: constraints[k][ck2], notes: '' };
+  }
+  if (!constraints[k][ck2]) {
+    constraints[k][ck2] = { status: 'ok', notes: '' };
+  }
+  
+  constraints[k][ck2].notes = notes;
+  scheduleAutoSave();
+  
+  const el=document.getElementById('my-constraints-status');
+  if(el) el.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:.5rem 0"><i class="ti ti-cloud-upload"></i> נשמר אוטומטית...</div>';
+}
+
 function toggleMyConstraint(ck2){
   const k=ck(constraintWorker);
   if(!constraints[k])constraints[k]={};
-  const cur=constraints[k][ck2]||'ok';
+  
+  // Ensure new format with notes
+  if (typeof constraints[k][ck2] === 'string') {
+    constraints[k][ck2] = { status: constraints[k][ck2], notes: '' };
+  }
+  if (!constraints[k][ck2]) {
+    constraints[k][ck2] = { status: 'ok', notes: '' };
+  }
+  
+  const cur = constraints[k][ck2].status || 'ok';
   // מחזור: ok -> blocked -> comp (חופש תמורה) -> ok
-  constraints[k][ck2]=cur==='ok'?'blocked':(cur==='blocked'?'comp':'ok');
+  constraints[k][ck2].status = cur==='ok'?'blocked':(cur==='blocked'?'comp':'ok');
+  
   renderMyPills();
   renderMyConstraintsPills();
   renderAllConstraintsBoard();
