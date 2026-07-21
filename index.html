@@ -598,8 +598,6 @@ async function loadFromServer() {
       if (d.subs_json) subs = JSON.parse(d.subs_json);
       if (d.requests_json) {
         requests = JSON.parse(d.requests_json);
-        console.log('>>> טען בקשות מSupabase:', requests.length);
-        requests.forEach(r => console.log(`  - ${r.wid}: ${r.from} עד ${r.to} (${r.status})`));
       }
       
       // עדכן בLocal גם כן
@@ -725,7 +723,8 @@ function workerCount(wid){
   return t;
 }
 function dateStr(d){
-  // תאריך מקומי, לא UTC
+  // תאריך מקומי בפורמט ISO (YYYY-MM-DD) - לא UTC!
+  if (!d) return '';
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
@@ -735,20 +734,14 @@ function fmtDate(s){if(!s)return '';const[y,m,dd]=s.split('-');return `${parseIn
 function fmtRange(f,t){return f===t?fmtDate(f):`${fmtDate(f)} — ${fmtDate(t)}`;}
 function pendingCount(){return requests.filter(r=>r.status==='pending').length;}
 function isApprovedVacDay(wid,weekStart,di){
+  // weekStart הוא Date object
+  // di הוא מספר ימים מהתחילה של השבוע
   const d=new Date(weekStart);
   d.setDate(d.getDate()+di);
-  const ds=dateStr(d);
+  const ds=dateStr(d); // תאריך בפורמט YYYY-MM-DD של היום הזה
   
-  const approved = requests.filter(r => r.wid===wid && r.status==='approved');
-  if (approved.length > 0) {
-    console.log(`בדיקה עבור ${wid} ביום ${ds}:`);
-    approved.forEach(r => {
-      const isInRange = ds>=r.from && ds<=r.to;
-      console.log(`  ${r.from} עד ${r.to}: ${isInRange ? '✓ בחופש' : '✗ לא בחופש'}`);
-    });
-  }
-  
-  return requests.some(r=>r.wid===wid&&r.status==='approved'&&ds>=r.from&&ds<=r.to);
+  const isVac = requests.some(r=>r.wid===wid&&r.status==='approved'&&ds>=r.from&&ds<=r.to);
+  return isVac;
 }
 function updatePendingBadge(){const n=pendingCount();const b=document.getElementById('pending-badge');b.textContent=n;b.style.display=n>0?'':'none';}
 
@@ -897,12 +890,6 @@ function renderPopup(){
   currentDate.setDate(currentDate.getDate()+di);
   const currentDateStr=dateStr(currentDate);
   
-  console.log(`>>> בדיקת תאריך: ${currentDateStr} (${day.label})`);
-  console.log(`>>> בקשות מאושרות: ${requests.filter(r => r.status==='approved').length}`);
-  requests.filter(r => r.status==='approved').forEach(r => {
-    console.log(`  ${r.wid}: ${r.from} עד ${r.to}`);
-  });
-  
   const allW=[...WORKERS,...subs.map(s=>({id:s,name:s,acls:'a-sub',dot:'#888'}))];
   const avail=[],blocked=[],onVac=[];
   allW.forEach(w=>{
@@ -910,8 +897,6 @@ function renderPopup(){
     const hasVac=requests.some(r=>r.wid===w.id&&r.status==='approved'&&currentDateStr>=r.from&&currentDateStr<=r.to);
     if(hasVac){
       onVac.push(w);
-      const vacReq = requests.find(r=>r.wid===w.id&&r.status==='approved'&&currentDateStr>=r.from&&currentDateStr<=r.to);
-      console.log(`  ${w.id}: בחופש (${vacReq.from} עד ${vacReq.to})`);
     }else if(isW&&isBlocked(w.id,sid,di)){
       blocked.push(w);
     }else{
@@ -932,16 +917,9 @@ function renderPopup(){
   document.getElementById('cell-popup').innerHTML=html;
 }
 function doAssign(k,wid){
-  console.log('>>> doAssign called:', k, '=', wid);
   schedule[k] = wid;
-  console.log('>>> Updated schedule, now:', Object.keys(schedule).length, 'items');
-  
   localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests}));
-  console.log('>>> Saved to localStorage');
-  
-  saveToServer(); // שלח לSupabase בעצמאות
-  console.log('>>> Called saveToServer');
-  
+  saveToServer();
   openCell=null;
   document.getElementById('cell-popup').innerHTML='';
   render();
@@ -995,42 +973,40 @@ function renderRequestsTab(){
   const sel=document.getElementById('worker-sel');
   sel.innerHTML=WORKERS.map(w=>`<button class="wsel-btn${selectedWorker===w.id?' active-'+w.id:''}" onclick="selectWorker('${w.id}')">${w.name}</button>`).join('');
   document.getElementById('req-form-area').style.display=selectedWorker?'block':'none';
-  if(selectedWorker){const today=dateStr(new Date());const fi=document.getElementById('req-from'),ti=document.getElementById('req-to');if(!fi.value)fi.value=today;if(!ti.value)ti.value=today;renderMyRequests();}
+  if(selectedWorker){
+    const today=new Date();
+    const todayStr=`${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`;
+    const fi=document.getElementById('req-from'),ti=document.getElementById('req-to');
+    if(!fi.value)fi.value=todayStr;
+    if(!ti.value)ti.value=todayStr;
+    renderMyRequests();
+  }
 }
 function selectWorker(wid){selectedWorker=wid;renderRequestsTab();}
 async function submitRequest(){
   if(!selectedWorker)return;
   const from=document.getElementById('req-from').value,to=document.getElementById('req-to').value,note=document.getElementById('req-note').value.trim();
-  console.log(`>>> קלט גולמי: from="${from}" to="${to}"`);
   if(!from||!to)return;
   
-  // Parse MM/DD/YYYY manually
+  // Parse MM/DD/YYYY to Date objects
   const parseDate = (str) => {
     const [m, d, y] = str.split('/');
-    // יצירת תאריך מקומי
-    const date = new Date(y, m-1, d, 0, 0, 0, 0);
-    return date;
+    return new Date(parseInt(y), parseInt(m)-1, parseInt(d), 0, 0, 0, 0);
   };
   
   const fromDate = parseDate(from);
   const toDate = parseDate(to);
-  console.log(`>>> Parsed dates: from=${dateStr(fromDate)} to=${dateStr(toDate)}`);
   
-  // Determine correct order
+  // Swap if needed so from <= to
   const [f, t] = fromDate <= toDate ? [from, to] : [to, from];
-  console.log(`>>> After sorting: from="${f}" to="${t}"`);
   
-  // Convert to ISO format (YYYY-MM-DD) for storage using local timezone
-  const fDate = parseDate(f);
-  const tDate = parseDate(t);
-  const fISO = dateStr(fDate);
-  const tISO = dateStr(tDate);
-  console.log(`>>> ISO format: from="${fISO}" to="${tISO}"`);
+  // Convert to YYYY-MM-DD format for storage
+  const fISO = dateStr(parseDate(f));
+  const tISO = dateStr(parseDate(t));
   
   const req={wid:selectedWorker,from:fISO,to:tISO,note,id:Date.now(),ts:Date.now(),status:'pending'};
   setSyncStatus('syncing');
   requests.push(req);
-  console.log(`>>> בקשה נשמרה:`, req);
   saveLocal();
   try {
     await saveToServer();
@@ -1038,6 +1014,7 @@ async function submitRequest(){
   } catch(e){ setSyncStatus('offline','נשמר מקומית'); }
   document.getElementById('req-note').value='';
   setSyncStatus('synced','בקשה נשלחה!');renderMyRequests();updatePendingBadge();
+}
 }
 function renderMyRequests(){
   const el=document.getElementById('my-requests-list');const mine=requests.filter(r=>r.wid===selectedWorker).sort((a,b)=>b.ts-a.ts);
