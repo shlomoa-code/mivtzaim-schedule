@@ -732,15 +732,17 @@ function isApprovedVacDay(wid,weekStart,di){
   const d=new Date(weekStart);
   d.setDate(d.getDate()+di);
   const ds=dateStr(d);
-  const isVac=requests.some(r=>{
-    if(r.wid===wid && r.status==='approved'){
-      const match=ds>=r.from && ds<=r.to;
-      if(match) console.log(`✓ ${ds} בחופש (${r.from} עד ${r.to})`);
-      return match;
-    }
-    return false;
-  });
-  return isVac;
+  
+  const approved = requests.filter(r => r.wid===wid && r.status==='approved');
+  if (approved.length > 0) {
+    console.log(`בדיקה עבור ${wid} ביום ${ds}:`);
+    approved.forEach(r => {
+      const isInRange = ds>=r.from && ds<=r.to;
+      console.log(`  ${r.from} עד ${r.to}: ${isInRange ? '✓ בחופש' : '✗ לא בחופש'}`);
+    });
+  }
+  
+  return requests.some(r=>r.wid===wid&&r.status==='approved'&&ds>=r.from&&ds<=r.to);
 }
 function updatePendingBadge(){const n=pendingCount();const b=document.getElementById('pending-badge');b.textContent=n;b.style.display=n>0?'':'none';}
 
@@ -888,6 +890,13 @@ function renderPopup(){
   const currentDate=new Date(weekStart);
   currentDate.setDate(currentDate.getDate()+di);
   const currentDateStr=dateStr(currentDate);
+  
+  console.log(`>>> בדיקת תאריך: ${currentDateStr} (${day.label})`);
+  console.log(`>>> בקשות מאושרות: ${requests.filter(r => r.status==='approved').length}`);
+  requests.filter(r => r.status==='approved').forEach(r => {
+    console.log(`  ${r.wid}: ${r.from} עד ${r.to}`);
+  });
+  
   const allW=[...WORKERS,...subs.map(s=>({id:s,name:s,acls:'a-sub',dot:'#888'}))];
   const avail=[],blocked=[],onVac=[];
   allW.forEach(w=>{
@@ -895,6 +904,8 @@ function renderPopup(){
     const hasVac=requests.some(r=>r.wid===w.id&&r.status==='approved'&&currentDateStr>=r.from&&currentDateStr<=r.to);
     if(hasVac){
       onVac.push(w);
+      const vacReq = requests.find(r=>r.wid===w.id&&r.status==='approved'&&currentDateStr>=r.from&&currentDateStr<=r.to);
+      console.log(`  ${w.id}: בחופש (${vacReq.from} עד ${vacReq.to})`);
     }else if(isW&&isBlocked(w.id,sid,di)){
       blocked.push(w);
     }else{
@@ -984,12 +995,30 @@ function selectWorker(wid){selectedWorker=wid;renderRequestsTab();}
 async function submitRequest(){
   if(!selectedWorker)return;
   const from=document.getElementById('req-from').value,to=document.getElementById('req-to').value,note=document.getElementById('req-note').value.trim();
+  console.log(`>>> קלט גולמי: from="${from}" to="${to}"`);
   if(!from||!to)return;
-  const f=from<=to?from:to,t=from<=to?to:from;
-  console.log(`>>> בקשת חופש: ${f} עד ${t}`);
-  const req={wid:selectedWorker,from:f,to:t,note,id:Date.now(),ts:Date.now(),status:'pending'};
+  
+  // המרה ל-Date objects להשוואה נכונה
+  const fromDate = new Date(from); // MM/DD/YYYY → Date
+  const toDate = new Date(to);
+  console.log(`>>> כDateTime: from=${fromDate.toISOString()} to=${toDate.toISOString()}`);
+  
+  // בחר את המוקדם יותר ל-from ואת המאוחר יותר ל-to
+  const f = fromDate <= toDate ? from : to;
+  const t = fromDate <= toDate ? to : from;
+  console.log(`>>> לאחר החלפה אם צריך: from="${f}" to="${t}"`);
+  
+  // המרה לפורמט ISO (YYYY-MM-DD) לשמירה ב-Supabase
+  const fDate = new Date(f);
+  const tDate = new Date(t);
+  const fISO = fDate.toISOString().slice(0, 10); // YYYY-MM-DD
+  const tISO = tDate.toISOString().slice(0, 10); // YYYY-MM-DD
+  console.log(`>>> פורמט ISO: ${fISO} עד ${tISO}`);
+  
+  const req={wid:selectedWorker,from:fISO,to:tISO,note,id:Date.now(),ts:Date.now(),status:'pending'};
   setSyncStatus('syncing');
   requests.push(req);
+  console.log(`>>> בקשה נשמרה בזיכרון:`, req);
   saveLocal();
   try {
     await saveToServer();
