@@ -1015,7 +1015,6 @@ async function submitRequest(){
   document.getElementById('req-note').value='';
   setSyncStatus('synced','בקשה נשלחה!');renderMyRequests();updatePendingBadge();
 }
-}
 function renderMyRequests(){
   const el=document.getElementById('my-requests-list');const mine=requests.filter(r=>r.wid===selectedWorker).sort((a,b)=>b.ts-a.ts);
   if(!mine.length){el.innerHTML=`<div class="empty-state">אין בקשות עדיין</div>`;return;}
