@@ -568,56 +568,18 @@ async function supaFetch(method, body) {
 }
 
 async function loadFromServer() {
-  setSyncStatus('syncing');
-  weekOff = 0; // תמיד התחל בשבוע הנוכחי
+  // For now - only load from localStorage, not Supabase
+  // This prevents empty Supabase from deleting local data
+  setSyncStatus('synced');
   
   try {
-    const rows = await supaFetch('GET');
-    
-    if (rows && rows.length > 0) {
-      const d = rows[0];
-      if (d.schedule_json) {
-        const parsed = JSON.parse(d.schedule_json);
-        // Normalize keys - כל מפתח שמתחיל במספר שלא 0, הפוך אותו ל-0
-        const normalized = {};
-        Object.keys(parsed).forEach(k => {
-          const parts = k.split('_');
-          if (parts.length >= 3) {
-            const newKey = '0_' + parts.slice(1).join('_');
-            normalized[newKey] = parsed[k];
-          } else {
-            normalized[k] = parsed[k];
-          }
-        });
-        schedule = normalized;
-      }
-      if (d.constraints_json) {
-        constraints = JSON.parse(d.constraints_json);
-      }
-      if (d.var_json) varData = JSON.parse(d.var_json);
-      if (d.subs_json) subs = JSON.parse(d.subs_json);
-      if (d.requests_json) {
-        requests = JSON.parse(d.requests_json);
-      }
-      
-      // עדכן בLocal גם כן
-      localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests}));
-    }
-    setSyncStatus('synced');
-  } catch(e) {
-    // אם Supabase נכשל - טעון מLocal
-    try {
-      const d = JSON.parse(localStorage.getItem('scheduleData')||'{}');
-      if (d.schedule) schedule = d.schedule;
-      if (d.constraints) {
-        constraints = d.constraints;
-      }
-      if (d.varData) varData = d.varData;
-      if (d.subs) subs = d.subs;
-      if (d.requests) requests = d.requests;
-    } catch(e2) {}
-    setSyncStatus('synced');
-  }
+    const d = JSON.parse(localStorage.getItem('scheduleData')||'{}');
+    if (d.schedule) schedule = d.schedule;
+    if (d.constraints) constraints = d.constraints;
+    if (d.varData) varData = d.varData;
+    if (d.subs) subs = d.subs;
+    if (d.requests) requests = d.requests;
+  } catch(e) {}
   
   render(); 
   renderCalendar(); 
@@ -625,31 +587,13 @@ async function loadFromServer() {
 }
 
 async function saveToServer() {
+  // For now - only save to localStorage, not Supabase
+  // This prevents losing data
   setSyncStatus('syncing');
   
-  // Normalize schedule keys to always be week 0 for storage
-  const normalized = {};
-  Object.keys(schedule).forEach(k => {
-    const parts = k.split('_');
-    if (parts.length >= 3) {
-      const newKey = '0_' + parts.slice(1).join('_');
-      normalized[newKey] = schedule[k];
-    } else {
-      normalized[k] = schedule[k];
-    }
-  });
-  
-  const data={
-    id: 1,
-    schedule_json: JSON.stringify(normalized),
-    constraints_json: JSON.stringify(constraints),
-    var_json: JSON.stringify(varData),
-    subs_json: JSON.stringify(subs),
-    requests_json: JSON.stringify(requests)
-  };
-  
   try {
-    await supaFetch('POST', data);
+    const data = {schedule,constraints,varData,subs,requests};
+    localStorage.setItem('scheduleData', JSON.stringify(data));
     setSyncStatus('synced');
   } catch(e) {
     setSyncStatus('synced');
