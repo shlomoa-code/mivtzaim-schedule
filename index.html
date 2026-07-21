@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v32'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v33'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -698,11 +698,11 @@ function getWorkerVarStatus(di,wid){const e=getVarDay(di).find(x=>x.wid===wid);r
 function isBlocked(wid,sid,di){return((constraints[ck(wid)]||{})[`${sid}_${di}`]||'ok')==='blocked';}
 function getWeekStart(off){
   const d=new Date();
-  const dayOfWeek=d.getDay();
+  const dayOfWeek=d.getDay(); // 0 = ראשון
   const msPerDay=24*60*60*1000;
-  const daysToSubtract=dayOfWeek; // רחוק עד ראשון
+  const daysToSubtract=dayOfWeek; // מספר ימים עד ראשון
   const weekStart=new Date(d.getTime()-daysToSubtract*msPerDay+off*7*msPerDay);
-  weekStart.setHours(0,0,0,0);
+  weekStart.setHours(0,0,0,0); // איפוס שעות לשעת בוקר
   return weekStart;
 }
 function fmtWeek(s){const e=new Date(s);e.setDate(e.getDate()+6);const f=d=>d.toLocaleDateString('he-IL',{day:'numeric',month:'numeric'});return f(s)+' — '+f(e);}
@@ -724,7 +724,13 @@ function workerCount(wid){
   });
   return t;
 }
-function dateStr(d){return d.toISOString().slice(0,10);}
+function dateStr(d){
+  // תאריך מקומי, לא UTC
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 function fmtDate(s){if(!s)return '';const[y,m,dd]=s.split('-');return `${parseInt(dd)}/${parseInt(m)}/${y}`;}
 function fmtRange(f,t){return f===t?fmtDate(f):`${fmtDate(f)} — ${fmtDate(t)}`;}
 function pendingCount(){return requests.filter(r=>r.status==='pending').length;}
@@ -1001,22 +1007,24 @@ async function submitRequest(){
   // Parse MM/DD/YYYY manually
   const parseDate = (str) => {
     const [m, d, y] = str.split('/');
-    return new Date(`${y}-${m}-${d}`); // Convert to YYYY-MM-DD for Date constructor
+    // יצירת תאריך מקומי
+    const date = new Date(y, m-1, d, 0, 0, 0, 0);
+    return date;
   };
   
   const fromDate = parseDate(from);
   const toDate = parseDate(to);
-  console.log(`>>> Parsed dates: from=${fromDate.toISOString().slice(0,10)} to=${toDate.toISOString().slice(0,10)}`);
+  console.log(`>>> Parsed dates: from=${dateStr(fromDate)} to=${dateStr(toDate)}`);
   
   // Determine correct order
   const [f, t] = fromDate <= toDate ? [from, to] : [to, from];
   console.log(`>>> After sorting: from="${f}" to="${t}"`);
   
-  // Convert to ISO format (YYYY-MM-DD) for storage
+  // Convert to ISO format (YYYY-MM-DD) for storage using local timezone
   const fDate = parseDate(f);
   const tDate = parseDate(t);
-  const fISO = fDate.toISOString().slice(0, 10);
-  const tISO = tDate.toISOString().slice(0, 10);
+  const fISO = dateStr(fDate);
+  const tISO = dateStr(tDate);
   console.log(`>>> ISO format: from="${fISO}" to="${tISO}"`);
   
   const req={wid:selectedWorker,from:fISO,to:tISO,note,id:Date.now(),ts:Date.now(),status:'pending'};
