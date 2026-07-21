@@ -381,7 +381,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans)
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
-const APP_VERSION='2024-01-14-v32'; // משתנה בכל עדכון
+const APP_VERSION='2024-01-14-v32-tz'; // משתנה בכל עדכון
 // בדוק אם יש קובץ חדש יותר
 window.addEventListener('load',()=>{
   const stored=localStorage.getItem('app_version');
@@ -696,11 +696,12 @@ function getWorkerVarStatus(di,wid){const e=getVarDay(di).find(x=>x.wid===wid);r
 function isBlocked(wid,sid,di){return((constraints[ck(wid)]||{})[`${sid}_${di}`]||'ok')==='blocked';}
 function getWeekStart(off){
   const d=new Date();
-  const dayOfWeek=d.getDay(); // 0 = ראשון
-  const msPerDay=24*60*60*1000;
-  const daysToSubtract=dayOfWeek; // מספר ימים עד ראשון
-  const weekStart=new Date(d.getTime()-daysToSubtract*msPerDay+off*7*msPerDay);
-  weekStart.setHours(0,0,0,0); // איפוס שעות לשעת בוקר
+  // Get current day of week (0=Sunday, 1=Monday, ..., 6=Saturday)
+  const dayOfWeek=d.getDay();
+  // Days to subtract to get to Sunday
+  const daysToSubtract=dayOfWeek;
+  // Calculate week start date
+  const weekStart=new Date(d.getFullYear(), d.getMonth(), d.getDate()-daysToSubtract+off*7, 0, 0, 0, 0);
   return weekStart;
 }
 function fmtWeek(s){const e=new Date(s);e.setDate(e.getDate()+6);const f=d=>d.toLocaleDateString('he-IL',{day:'numeric',month:'numeric'});return f(s)+' — '+f(e);}
@@ -723,15 +724,21 @@ function workerCount(wid){
   return t;
 }
 function dateStr(d){
-  return d.toISOString().slice(0,10);
+  // Always use local timezone, never UTC
+  if (!d) return '';
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 function fmtDate(s){if(!s)return '';const[y,m,dd]=s.split('-');return `${parseInt(dd)}/${parseInt(m)}/${y}`;}
 function fmtRange(f,t){return f===t?fmtDate(f):`${fmtDate(f)} — ${fmtDate(t)}`;}
 function pendingCount(){return requests.filter(r=>r.status==='pending').length;}
 function isApprovedVacDay(wid,weekStart,di){
-  const d=new Date(weekStart);
-  d.setDate(d.getDate()+di);
+  // Create a date for this specific day of the week
+  const d=new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate()+di);
   const ds=dateStr(d);
+  // Check if this day is within an approved vacation period
   return requests.some(r=>r.wid===wid&&r.status==='approved'&&ds>=r.from&&ds<=r.to);
 }
 function updatePendingBadge(){const n=pendingCount();const b=document.getElementById('pending-badge');b.textContent=n;b.style.display=n>0?'':'none';}
@@ -877,9 +884,10 @@ function renderPopup(){
   const{sid,di,k}=openCell;
   const shift=SHIFTS.find(s=>s.id===sid),day=DAYS[di];
   const weekStart=getWeekStart(weekOff);
-  const currentDate=new Date(weekStart);
-  currentDate.setDate(currentDate.getDate()+di);
+  // Calculate the specific date for this day of the week
+  const currentDate=new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate()+di);
   const currentDateStr=dateStr(currentDate);
+  
   const allW=[...WORKERS,...subs.map(s=>({id:s,name:s,acls:'a-sub',dot:'#888'}))];
   const avail=[],blocked=[],onVac=[];
   allW.forEach(w=>{
@@ -963,14 +971,38 @@ function renderRequestsTab(){
   const sel=document.getElementById('worker-sel');
   sel.innerHTML=WORKERS.map(w=>`<button class="wsel-btn${selectedWorker===w.id?' active-'+w.id:''}" onclick="selectWorker('${w.id}')">${w.name}</button>`).join('');
   document.getElementById('req-form-area').style.display=selectedWorker?'block':'none';
-  if(selectedWorker){const today=dateStr(new Date());const fi=document.getElementById('req-from'),ti=document.getElementById('req-to');if(!fi.value)fi.value=today;if(!ti.value)ti.value=today;renderMyRequests();}
+  if(selectedWorker){
+    const today=new Date();
+    // Format as MM/DD/YYYY in local timezone
+    const todayStr=`${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`;
+    const fi=document.getElementById('req-from'),ti=document.getElementById('req-to');
+    if(!fi.value)fi.value=todayStr;
+    if(!ti.value)ti.value=todayStr;
+    renderMyRequests();
+  }
 }
 function selectWorker(wid){selectedWorker=wid;renderRequestsTab();}
 async function submitRequest(){
   if(!selectedWorker)return;
   const from=document.getElementById('req-from').value,to=document.getElementById('req-to').value,note=document.getElementById('req-note').value.trim();
   if(!from||!to)return;
-  const f=from<=to?from:to,t=from<=to?to:from;
+  
+  // Parse MM/DD/YYYY to local Date object
+  const parseDate = (str) => {
+    const [m, d, y] = str.split('/');
+    return new Date(parseInt(y), parseInt(m)-1, parseInt(d));
+  };
+  
+  const fromDate = parseDate(from);
+  const toDate = parseDate(to);
+  
+  // Swap if needed so from <= to
+  const [fDate, tDate] = fromDate <= toDate ? [fromDate, toDate] : [toDate, fromDate];
+  
+  // Convert to YYYY-MM-DD in local timezone
+  const f = dateStr(fDate);
+  const t = dateStr(tDate);
+  
   const req={wid:selectedWorker,from:f,to:t,note,id:Date.now(),ts:Date.now(),status:'pending'};
   setSyncStatus('syncing');
   requests.push(req);
