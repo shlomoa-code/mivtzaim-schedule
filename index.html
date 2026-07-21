@@ -998,27 +998,31 @@ async function submitRequest(){
   console.log(`>>> קלט גולמי: from="${from}" to="${to}"`);
   if(!from||!to)return;
   
-  // המרה ל-Date objects להשוואה נכונה
-  const fromDate = new Date(from); // MM/DD/YYYY → Date
-  const toDate = new Date(to);
-  console.log(`>>> כDateTime: from=${fromDate.toISOString()} to=${toDate.toISOString()}`);
+  // Parse MM/DD/YYYY manually
+  const parseDate = (str) => {
+    const [m, d, y] = str.split('/');
+    return new Date(`${y}-${m}-${d}`); // Convert to YYYY-MM-DD for Date constructor
+  };
   
-  // בחר את המוקדם יותר ל-from ואת המאוחר יותר ל-to
-  const f = fromDate <= toDate ? from : to;
-  const t = fromDate <= toDate ? to : from;
-  console.log(`>>> לאחר החלפה אם צריך: from="${f}" to="${t}"`);
+  const fromDate = parseDate(from);
+  const toDate = parseDate(to);
+  console.log(`>>> Parsed dates: from=${fromDate.toISOString().slice(0,10)} to=${toDate.toISOString().slice(0,10)}`);
   
-  // המרה לפורמט ISO (YYYY-MM-DD) לשמירה ב-Supabase
-  const fDate = new Date(f);
-  const tDate = new Date(t);
-  const fISO = fDate.toISOString().slice(0, 10); // YYYY-MM-DD
-  const tISO = tDate.toISOString().slice(0, 10); // YYYY-MM-DD
-  console.log(`>>> פורמט ISO: ${fISO} עד ${tISO}`);
+  // Determine correct order
+  const [f, t] = fromDate <= toDate ? [from, to] : [to, from];
+  console.log(`>>> After sorting: from="${f}" to="${t}"`);
+  
+  // Convert to ISO format (YYYY-MM-DD) for storage
+  const fDate = parseDate(f);
+  const tDate = parseDate(t);
+  const fISO = fDate.toISOString().slice(0, 10);
+  const tISO = tDate.toISOString().slice(0, 10);
+  console.log(`>>> ISO format: from="${fISO}" to="${tISO}"`);
   
   const req={wid:selectedWorker,from:fISO,to:tISO,note,id:Date.now(),ts:Date.now(),status:'pending'};
   setSyncStatus('syncing');
   requests.push(req);
-  console.log(`>>> בקשה נשמרה בזיכרון:`, req);
+  console.log(`>>> בקשה נשמרה:`, req);
   saveLocal();
   try {
     await saveToServer();
