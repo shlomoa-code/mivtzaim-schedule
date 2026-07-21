@@ -569,39 +569,43 @@ async function supaFetch(method, body) {
 
 async function loadFromServer() {
   setSyncStatus('syncing');
-  weekOff = 0; // תמיד התחל בשבוע הנוכחי
+  weekOff = 0;
   
   try {
     const rows = await supaFetch('GET');
     
-    if (rows && rows.length > 0) {
+    // If Supabase has data, use it
+    if (rows && rows.length > 0 && rows[0].schedule_json) {
       const d = rows[0];
-      if (d.schedule_json) {
-        const parsed = JSON.parse(d.schedule_json);
-        // Normalize keys
-        const normalized = {};
-        Object.keys(parsed).forEach(k => {
-          const parts = k.split('_');
-          if (parts.length >= 3) {
-            const newKey = '0_' + parts.slice(1).join('_');
-            normalized[newKey] = parsed[k];
-          } else {
-            normalized[k] = parsed[k];
-          }
-        });
-        schedule = normalized;
-      }
+      const parsed = JSON.parse(d.schedule_json);
+      const normalized = {};
+      Object.keys(parsed).forEach(k => {
+        const parts = k.split('_');
+        if (parts.length >= 3) {
+          const newKey = '0_' + parts.slice(1).join('_');
+          normalized[newKey] = parsed[k];
+        } else {
+          normalized[k] = parsed[k];
+        }
+      });
+      schedule = normalized;
       if (d.constraints_json) constraints = JSON.parse(d.constraints_json);
       if (d.var_json) varData = JSON.parse(d.var_json);
       if (d.subs_json) subs = JSON.parse(d.subs_json);
       if (d.requests_json) requests = JSON.parse(d.requests_json);
-      
-      // עדכן בLocal גם כן
       localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests}));
+    } else {
+      // Supabase is empty - load from localStorage instead
+      const d = JSON.parse(localStorage.getItem('scheduleData')||'{}');
+      if (d.schedule) schedule = d.schedule;
+      if (d.constraints) constraints = d.constraints;
+      if (d.varData) varData = d.varData;
+      if (d.subs) subs = d.subs;
+      if (d.requests) requests = d.requests;
     }
     setSyncStatus('synced');
   } catch(e) {
-    // אם Supabase נכשל - טעון מLocal
+    // If Supabase fails - load from localStorage
     try {
       const d = JSON.parse(localStorage.getItem('scheduleData')||'{}');
       if (d.schedule) schedule = d.schedule;
