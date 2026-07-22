@@ -1,12 +1,6 @@
 const CACHE_VERSION = 'mivtzaim-2024-01-14-v32-tz';
-const urlsToCache = ['/', '/index.html'];
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_VERSION).then(cache => {
-      return cache.addAll(urlsToCache);
-    }).catch(err => console.log('Install error:', err))
-  );
   self.skipWaiting();
 });
 
@@ -26,44 +20,29 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // עבור HTML, תמיד בדוק עם השרת
-  if (event.request.url.includes('index.html') || event.request.url.endsWith('/')) {
-    event.respondWith(
-      fetch(event.request).then(response => {
-        if (!response || response.status !== 200 || response.type === 'error') {
-          return caches.match(event.request);
+  // עבור POST/PUT/DELETE - תמיד לחזור ישירות לשרת
+  if (event.request.method !== 'GET') {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+  
+  // עבור GET - תנסה network קודם, אחרי זה cache
+  event.respondWith(
+    fetch(event.request)
+      .then(response => {
+        if (!response || response.status !== 200) {
+          return response;
         }
-        const responseToCache = response.clone();
+        // שמור בcache רק אם זה בסדר
+        const responseClone = response.clone();
         caches.open(CACHE_VERSION).then(cache => {
-          cache.put(event.request, responseToCache);
+          cache.put(event.request, responseClone);
         });
         return response;
-      }).catch(() => {
+      })
+      .catch(() => {
+        // אם לא יש network - תגובה מcache
         return caches.match(event.request);
       })
-    );
-  } else {
-    // עבור קבצים אחרים
-    // אל תשמור POST/PUT/DELETE בcache (זה לא נתמך)
-    if (event.request.method !== 'GET') {
-      event.respondWith(fetch(event.request));
-      return;
-    }
-    
-    // לGET requests, השתמש בcache קודם
-    event.respondWith(
-      caches.match(event.request).then(response => {
-        return response || fetch(event.request).then(response => {
-          if (!response || response.status !== 200 || response.type === 'error') {
-            return response;
-          }
-          const responseToCache = response.clone();
-          caches.open(CACHE_VERSION).then(cache => {
-            cache.put(event.request, responseToCache);
-          });
-          return response;
-        });
-      }).catch(() => fetch(event.request))
-    );
-  }
+  );
 });
