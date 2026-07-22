@@ -569,7 +569,6 @@ async function supaFetch(method, body) {
 
 async function loadFromServer() {
   setSyncStatus('syncing');
-  weekOff = 0;
   
   try {
     const rows = await supaFetch('GET');
@@ -577,25 +576,19 @@ async function loadFromServer() {
     // If Supabase has data, use it
     if (rows && rows.length > 0 && rows[0].schedule_json) {
       const d = rows[0];
-      const parsed = JSON.parse(d.schedule_json);
-      const normalized = {};
-      Object.keys(parsed).forEach(k => {
-        const parts = k.split('_');
-        if (parts.length >= 3) {
-          const newKey = '0_' + parts.slice(1).join('_');
-          normalized[newKey] = parsed[k];
-        } else {
-          normalized[k] = parsed[k];
-        }
-      });
-      schedule = normalized;
+      // Load weekOff if it exists, otherwise use 0
+      if (d.week_offset !== undefined && d.week_offset !== null) {
+        weekOff = d.week_offset;
+      }
+      schedule = JSON.parse(d.schedule_json);
       if (d.constraints_json) constraints = JSON.parse(d.constraints_json);
       if (d.var_json) varData = JSON.parse(d.var_json);
       if (d.subs_json) subs = JSON.parse(d.subs_json);
       if (d.requests_json) requests = JSON.parse(d.requests_json);
       localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests}));
     } else {
-      // Supabase is empty - load from localStorage instead
+      // Supabase is empty - load from localStorage
+      weekOff = 0;
       const d = JSON.parse(localStorage.getItem('scheduleData')||'{}');
       if (d.schedule) schedule = d.schedule;
       if (d.constraints) constraints = d.constraints;
@@ -606,6 +599,7 @@ async function loadFromServer() {
     setSyncStatus('synced');
   } catch(e) {
     // If Supabase fails - load from localStorage
+    weekOff = 0;
     try {
       const d = JSON.parse(localStorage.getItem('scheduleData')||'{}');
       if (d.schedule) schedule = d.schedule;
@@ -625,21 +619,10 @@ async function loadFromServer() {
 async function saveToServer() {
   setSyncStatus('syncing');
   
-  // Normalize schedule keys to always be week 0 for storage
-  const normalized = {};
-  Object.keys(schedule).forEach(k => {
-    const parts = k.split('_');
-    if (parts.length >= 3) {
-      const newKey = '0_' + parts.slice(1).join('_');
-      normalized[newKey] = schedule[k];
-    } else {
-      normalized[k] = schedule[k];
-    }
-  });
-  
   const data={
     id: 1,
-    schedule_json: JSON.stringify(normalized),
+    week_offset: weekOff,
+    schedule_json: JSON.stringify(schedule),
     constraints_json: JSON.stringify(constraints),
     var_json: JSON.stringify(varData),
     subs_json: JSON.stringify(subs),
@@ -647,13 +630,10 @@ async function saveToServer() {
   };
   
   try {
-    // Save to Supabase (UPSERT - no DELETE)
     await supaFetch('POST', data);
-    // Also save to localStorage as backup
     localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests}));
     setSyncStatus('synced');
   } catch(e) {
-    // If Supabase fails, at least save to localStorage
     localStorage.setItem('scheduleData', JSON.stringify({schedule,constraints,varData,subs,requests}));
     setSyncStatus('synced');
   }

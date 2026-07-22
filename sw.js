@@ -43,7 +43,14 @@ self.addEventListener('fetch', event => {
       })
     );
   } else {
-    // לגבי קבצים אחרים, השתמש בcache קודם
+    // עבור קבצים אחרים
+    // אל תשמור POST/PUT/DELETE בcache (זה לא נתמך)
+    if (event.request.method !== 'GET') {
+      event.respondWith(fetch(event.request));
+      return;
+    }
+    
+    // לGET requests, השתמש בcache קודם
     event.respondWith(
       caches.match(event.request).then(response => {
         return response || fetch(event.request).then(response => {
